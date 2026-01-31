@@ -1,4 +1,6 @@
 import { createRootRoute, Outlet } from '@tanstack/react-router'
+import { AuthProvider } from '@/lib/stores/auth'
+import '@/styles/globals.css'
 
 export const Route = createRootRoute({
   component: RootLayout,
@@ -6,8 +8,10 @@ export const Route = createRootRoute({
 
 function RootLayout() {
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Outlet />
-    </div>
+    <AuthProvider>
+      <div className="min-h-screen bg-gray-50">
+        <Outlet />
+      </div>
+    </AuthProvider>
   )
 }
