@@ -1,65 +1,72 @@
-# Dependencies
-node_modules/
-.pnp
-.pnp.js
-
-# Testing
-coverage/
-.nyc_output
-
-# Production
-build/
-dist/
-.output/
-.vercel
-
-# Misc
-.DS_Store
-# Environment variables
+# ── Secretos y configuración local ───────────────────────────────────────────
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
+.env.staging
+.env.production
+# Permitir el archivo de ejemplo si el proyecto lo usa:
+# !.env.example
 
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
+# Claves, certificados y credenciales
+*.pem
+*.key
+*.p12
+*.pfx
+credentials.json
+secrets.json
+service-account*.json
 
-# IDE
-.vscode/
+# ── Sistema operativo ─────────────────────────────────────────────────────────
+Thumbs.db
+desktop.ini
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+
+# ── Editores e IDEs ───────────────────────────────────────────────────────────
+.vscode/settings.json
+.vscode/launch.json
 .idea/
 *.swp
 *.swo
 *~
 
-# OS
-Thumbs.db
-
-# Database
-*.db
-*.sqlite
-*.sqlite3
-
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
+# ── Dependencias (genérico) ───────────────────────────────────────────────────
+node_modules/
+vendor/
+.venv/
 venv/
-env/
-ENV/
+__pycache__/
+*.pyc
+*.pyo
 
-# TypeScript
-*.tsbuildinfo
+# ── Builds y caches genéricos ─────────────────────────────────────────────────
+dist/
+build/
+out/
+.cache/
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# Temporary files
-tmp/
-temp/
-*.tmp
+# ── Test coverage ─────────────────────────────────────────────────────────────
+coverage/
+.nyc_output/
+htmlcov/
+
+# ── Stack específico ──────────────────────────────────────────────────────────
+# Agregar aquí las reglas específicas del stack del proyecto
+
+# ── Repos Git anidados (working trees independientes con su propio remote) ────
+# El wrapper no los rastrea como gitlinks; cada uno se gestiona desde su propio
+# repo. Si en el futuro se decide convertirlos en submódulos formales, eliminar
+# estas líneas y usar `git submodule add`.
+GrowLab-agent1/
+orchestrator/
