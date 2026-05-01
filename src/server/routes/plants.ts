@@ -44,7 +44,7 @@ plantsRoutes.post('/', async (c) => {
       return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Invalid input data', fields: fieldErrors } }, 400)
     }
 
-    const result = await createPlant(auth.user.userId, validation.data)
+    const result = await createPlant(auth.user.userId, auth.user.subscriptionTier, validation.data)
     if (!result.success) return c.json({ success: false, error: result.error }, 400)
     return c.json({ success: true, data: { plant: result.data.plant } }, 201)
   } catch (error) {
@@ -160,7 +160,7 @@ plantsRoutes.post('/:plantId/logs', async (c) => {
       const status = result.error.code === 'PLANT_NOT_FOUND' ? 404 : 403
       return c.json({ success: false, error: result.error }, status)
     }
-    return c.json({ success: true, data: { log: result.data.log } }, 201)
+    return c.json({ success: true, data: { careLog: result.data.careLog } }, 201)
   } catch (error) {
     console.error('Create care log error:', error)
     return c.json({ success: false, error: { code: 'INTERNAL_ERROR', message: 'An unexpected error occurred' } }, 500)

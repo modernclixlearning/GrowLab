@@ -55,6 +55,16 @@ pnpm typecheck     # TypeScript check sin emit
 
 ---
 
+## UI Feedback Standard
+
+- Toda operación CRUD iniciada desde la UI debe mostrar feedback con Sonner.
+- En éxito, mostrar `toast.success(...)` con una confirmación específica de la acción realizada.
+- En error, mapear la respuesta `{ success: false, error: { code, message, fields? } }` a un mensaje de usuario con `getApiErrorToastMessage`.
+- Los hooks/API clients deben preservar `code`, `message` y `fields` usando `ApiResponseError`; no convertir errores API directamente a `Error(message)` si la UI necesita feedback.
+- Los errores inline pueden mantenerse para contexto del formulario, pero no reemplazan el toast global de la operación.
+
+---
+
 ## Security Constraints
 
 - Los archivos `.env` y equivalentes nunca se commitean (ver `.gitignore`).

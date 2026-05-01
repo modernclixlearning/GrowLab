@@ -62,7 +62,7 @@ export default function PlantDetailPage() {
   const navigate = useNavigate()
   const { plantId } = useParams<{ plantId: string }>()
   const { isAuthenticated, isLoading: authLoading } = useAuth()
-  const { data: plant, isLoading, error } = usePlant(plantId)
+  const { data: plant, isLoading, error } = usePlant(plantId ?? '')
   const updatePlant = useUpdatePlant()
   const deletePlant = useDeletePlant()
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)

@@ -37,7 +37,7 @@ export type AuthResult =
  * @returns AuthResult with user data or error response
  */
 export async function authenticate(request: Request): Promise<AuthResult> {
-  const authHeader = request.headers.get('Authorization')
+  const authHeader = request.headers.get('authorization')
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return {

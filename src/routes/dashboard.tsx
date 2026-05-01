@@ -5,7 +5,7 @@
  */
 
 import { useNavigate } from 'react-router-dom'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Leaf, LogOut, Settings, Plus, Sprout, TreePine } from 'lucide-react'
 import { useAuth } from '@/lib/stores/auth'
 import { usePlants } from '@/lib/hooks/usePlants'
@@ -18,10 +18,13 @@ export default function DashboardPage() {
   const [showAddModal, setShowAddModal] = useState(false)
 
   // Redirect to login if not authenticated
-  if (!isLoading && !isAuthenticated) {
-    navigate('')
-    return null
-  }
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      navigate('/login')
+    }
+  }, [isLoading, isAuthenticated, navigate])
+
+  if (!isLoading && !isAuthenticated) return null
 
   if (isLoading) {
     return (
@@ -36,7 +39,7 @@ export default function DashboardPage() {
 
   const handleLogout = async () => {
     await logout()
-    navigate('')
+    navigate('/')
   }
 
   const totalPlants = plantsData?.total ?? 0
@@ -67,7 +70,7 @@ export default function DashboardPage() {
               {user?.name || user?.email}
             </span>
             <button
-              onClick={() => navigate('')}
+              onClick={() => navigate('/garden')}
               className="rounded-lg p-2 text-gray-600 hover:bg-gray-100"
               aria-label="Settings"
             >
@@ -99,7 +102,7 @@ export default function DashboardPage() {
         {/* Stats Grid */}
         <div className="mb-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           <button
-            onClick={() => navigate('')}
+            onClick={() => navigate('/garden')}
             className="text-left"
           >
             <StatCard
@@ -135,7 +138,7 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-gray-900">Your Garden</h2>
               <button
-                onClick={() => navigate('')}
+                onClick={() => navigate('/garden')}
                 className="text-sm font-medium text-primary-700 hover:text-primary-800"
               >
                 View All
@@ -146,7 +149,7 @@ export default function DashboardPage() {
             </p>
             <div className="flex gap-3">
               <button
-                onClick={() => navigate('')}
+                onClick={() => navigate('/garden')}
                 className="btn-primary"
               >
                 <Leaf className="mr-2 h-4 w-4" />

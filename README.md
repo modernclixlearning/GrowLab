@@ -3,7 +3,7 @@
 **Cannabis Growing App** — Full-stack TypeScript application for managing cannabis cultivation from seed to harvest.
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3+-blue?logo=typescript)](https://www.typescriptlang.org/)
-[![TanStack Start](https://img.shields.io/badge/TanStack_Start-React-ff4154?logo=react)](https://tanstack.com/start)
+[![Vite](https://img.shields.io/badge/Vite-React-646CFF?logo=vite)](https://vitejs.dev/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15+-336791?logo=postgresql)](https://www.postgresql.org/)
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 
@@ -27,13 +27,15 @@ GrowLab helps growers manage their cannabis cultivation with:
 
 | Layer | Technology |
 |-------|------------|
-| **Framework** | TanStack Start (React-based full-stack) |
+| **Frontend** | Vite + React 18 + React Router v6 |
+| **Backend** | Hono + @hono/node-server |
 | **Language** | TypeScript 5.3+ |
-| **Database** | PostgreSQL 15+ with Drizzle ORM |
+| **Database** | PostgreSQL 16+ with Drizzle ORM |
 | **Styling** | Tailwind CSS |
 | **State** | TanStack Query + React Context |
 | **Validation** | Zod |
-| **Testing** | Vitest + Playwright |
+| **Feedback** | Sonner toast notifications |
+| **Testing** | Vitest + TypeScript typecheck |
 
 ---
 
@@ -42,8 +44,8 @@ GrowLab helps growers manage their cannabis cultivation with:
 ### Prerequisites
 
 - Node.js 20+ LTS
-- pnpm 8+
-- PostgreSQL 15+
+- npm 10+
+- Docker Desktop (recommended for local Postgres + app container)
 
 ### Installation
 
@@ -53,16 +55,16 @@ git clone https://github.com/modernclixlearning/GrowLab.git
 cd GrowLab
 
 # Install dependencies
-pnpm install
+npm install
 
 # Set up environment variables
 cp .env.example .env
 
-# Run database migrations
-pnpm db:migrate
+# Run database migrations or push local schema
+npm run db:push
 
 # Start development server
-pnpm dev
+npm run dev
 ```
 
 ---
@@ -71,19 +73,30 @@ pnpm dev
 
 ```
 GrowLab/
-├── app/                    # TanStack Start app
-│   ├── routes/             # Pages and routes
+├── src/
 │   ├── components/         # React components
-│   └── lib/                # Shared utilities
-├── server/                 # Server logic
-│   ├── api/                # API routes
-│   ├── db/                 # Drizzle schemas & migrations
-│   └── services/           # Business logic
-├── shared/                 # Shared types & schemas
+│   ├── lib/                # API clients, hooks, stores, error mapping
+│   ├── routes/             # React Router pages
+│   ├── server/             # Hono API, services, Drizzle schema
+│   ├── styles/             # Tailwind globals
+│   └── types/              # Shared frontend types
 ├── tests/                  # Test suites
 ├── docs/                   # Documentation
-└── public/                 # Static assets
+└── docker-compose.yml      # Local app + PostgreSQL
 ```
+
+---
+
+## UI Feedback Standard
+
+All UI-triggered CRUD operations should surface API responses through Sonner toasts:
+
+- Success responses use `toast.success(...)` with an action-specific message.
+- Error responses preserve `{ code, message, fields? }` through `ApiResponseError`.
+- UI components map errors with `getApiErrorToastMessage(...)` before showing `toast.error(...)`.
+- Inline form errors can remain for local context, but they do not replace global operation feedback.
+
+Current implementation: `AddPlantModal` shows success and error toasts for plant creation.
 
 ---
 

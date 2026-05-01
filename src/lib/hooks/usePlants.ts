@@ -8,6 +8,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/lib/stores/auth'
 import * as plantsApi from '@/lib/api/plants'
+import { ApiResponseError } from '@/lib/api/errors'
 import type {
   CreatePlantRequest,
   UpdatePlantRequest,
@@ -36,7 +37,7 @@ export function usePlants(params?: ListPlantsParams) {
     queryFn: async () => {
       if (!accessToken) throw new Error('Not authenticated')
       const result = await plantsApi.listPlants(accessToken, params)
-      if (!result.success) throw new Error(result.error.message)
+      if (!result.success) throw new ApiResponseError(result.error)
       return result.data
     },
     enabled: !!accessToken,
@@ -54,7 +55,7 @@ export function usePlant(plantId: string) {
     queryFn: async () => {
       if (!accessToken) throw new Error('Not authenticated')
       const result = await plantsApi.getPlant(accessToken, plantId)
-      if (!result.success) throw new Error(result.error.message)
+      if (!result.success) throw new ApiResponseError(result.error)
       return result.data.plant
     },
     enabled: !!accessToken && !!plantId,
@@ -72,7 +73,7 @@ export function useCreatePlant() {
     mutationFn: async (data: CreatePlantRequest) => {
       if (!accessToken) throw new Error('Not authenticated')
       const result = await plantsApi.createPlant(accessToken, data)
-      if (!result.success) throw new Error(result.error.message)
+      if (!result.success) throw new ApiResponseError(result.error)
       return result.data.plant
     },
     onSuccess: () => {
@@ -99,7 +100,7 @@ export function useUpdatePlant() {
     }) => {
       if (!accessToken) throw new Error('Not authenticated')
       const result = await plantsApi.updatePlant(accessToken, plantId, data)
-      if (!result.success) throw new Error(result.error.message)
+      if (!result.success) throw new ApiResponseError(result.error)
       return result.data.plant
     },
     onSuccess: (plant) => {
@@ -122,7 +123,7 @@ export function useDeletePlant() {
     mutationFn: async (plantId: string) => {
       if (!accessToken) throw new Error('Not authenticated')
       const result = await plantsApi.deletePlant(accessToken, plantId)
-      if (!result.success) throw new Error(result.error.message)
+      if (!result.success) throw new ApiResponseError(result.error)
       return plantId
     },
     onSuccess: (plantId) => {

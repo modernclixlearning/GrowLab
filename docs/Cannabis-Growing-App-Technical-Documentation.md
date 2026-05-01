@@ -1,7 +1,7 @@
 # Cannabis Growing App
 ## Technical Planning & Development Documentation
 
-**Full-Stack TypeScript with TanStack Start**
+**Full-Stack TypeScript with Vite, React Router, and Hono**
 
 Version 1.0 | January 30, 2026
 
@@ -24,7 +24,7 @@ Version 1.0 | January 30, 2026
 
 ## 1. Executive Summary
 
-The Cannabis Growing App is a comprehensive full-stack web application designed to help growers manage their cannabis cultivation from seed to harvest. Built with TypeScript and TanStack Start, the application provides an intuitive interface for tracking plant growth stages, managing care schedules, monitoring environmental conditions, and receiving automated reminders for watering, feeding, and other maintenance tasks.
+The Cannabis Growing App is a comprehensive full-stack web application designed to help growers manage their cannabis cultivation from seed to harvest. The current implementation uses TypeScript throughout, with Vite + React Router v6 on the frontend and Hono on the backend. It provides an interface for tracking plant growth stages, managing plant records, logging care events, and viewing garden state through authenticated workflows.
 
 This document outlines the complete technical architecture, feature specifications, and development roadmap for building a production-ready application that serves both hobbyist and professional cannabis cultivators.
 
@@ -42,7 +42,7 @@ This document outlines the complete technical architecture, feature specificatio
 
 ## 2. Application Overview
 
-The application follows a modern full-stack architecture using TypeScript throughout the entire codebase. TanStack Start provides the foundation for both the frontend and backend, enabling seamless data flow and type safety from database to UI.
+The application follows a modern TypeScript architecture with a Vite single-page frontend and a Hono API server. React Router v6 owns client-side navigation, TanStack Query owns server state, Drizzle ORM owns PostgreSQL access, and Hono exposes the REST API under `/api`.
 
 ### Target Users
 
@@ -62,13 +62,14 @@ The app embraces a clean, modern aesthetic with a botanical green color palette 
 
 | Layer | Technology |
 |-------|-----------|
-| **Framework** | TanStack Start (React-based full-stack framework) |
+| **Frontend** | Vite + React 18 + React Router v6 |
+| **Backend** | Hono + @hono/node-server |
 | **Language** | TypeScript 5.3+ |
-| **Database** | PostgreSQL 15+ with Drizzle ORM |
+| **Database** | PostgreSQL 16+ with Drizzle ORM |
 | **Styling** | Tailwind CSS with custom theme |
 | **State Management** | TanStack Query + React Context |
 | **Validation** | Zod for schema validation |
-| **Testing** | Vitest + Testing Library + Playwright |
+| **Testing** | Vitest + TypeScript typecheck |
 
 ### Additional Dependencies
 
@@ -78,6 +79,7 @@ The app embraces a clean, modern aesthetic with a botanical green color palette 
 - **recharts** - Data visualization and growth charts
 - **react-hook-form** - Form state management
 - **lucide-react** - Icon library
+- **sonner** - Toast notifications for CRUD API feedback
 - **clsx / tailwind-merge** - Conditional styling utilities
 - **jose** - JWT operations for authentication
 - **bcrypt** - Password hashing
@@ -86,9 +88,16 @@ The app embraces a clean, modern aesthetic with a botanical green color palette 
 ### Development Requirements
 
 - Node.js 20+ LTS
-- pnpm 8+ (recommended package manager)
-- PostgreSQL 15+ or compatible database
+- npm 10+
+- Docker Desktop for local app + PostgreSQL orchestration
+- PostgreSQL 16+ or compatible database
 - TypeScript 5.3+
+
+### UI Feedback Standard
+
+Every CRUD operation initiated from the UI should map API responses into Sonner toast feedback. Successful operations use `toast.success(...)` with a specific confirmation. Failed API responses preserve `{ code, message, fields? }` through `ApiResponseError` and are mapped with `getApiErrorToastMessage(...)` before calling `toast.error(...)`. Inline form errors may remain for local context, but global operation feedback is the app standard.
+
+The standard is currently implemented for plant creation in `AddPlantModal` and documented in `CLAUDE.md` for future CRUD work.
 
 ---
 

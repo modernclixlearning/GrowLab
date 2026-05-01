@@ -9,8 +9,10 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
+import { toast } from 'sonner'
 import { X, Leaf, AlertCircle } from 'lucide-react'
 import { useCreatePlant } from '@/lib/hooks/usePlants'
+import { getApiErrorToastMessage } from '@/lib/api/errors'
 import type { GrowthStage, StrainType } from '@/types/plants'
 import { GROWTH_STAGE_CONFIG, STRAIN_TYPE_CONFIG } from '@/types/plants'
 
@@ -61,11 +63,14 @@ export function AddPlantModal({ isOpen, onClose, onSuccess }: AddPlantModalProps
         growthStage: data.growthStage,
         notes: data.notes || undefined,
       })
+      toast.success(`${data.name} added to your garden`)
       reset()
       onSuccess?.()
       onClose()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create plant')
+      const message = getApiErrorToastMessage(err, 'Failed to create plant')
+      setError(message)
+      toast.error(message)
     }
   }
 
@@ -98,6 +103,7 @@ export function AddPlantModal({ isOpen, onClose, onSuccess }: AddPlantModalProps
           <button
             onClick={handleClose}
             className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+            aria-label="Close add plant modal"
           >
             <X className="h-5 w-5" />
           </button>
