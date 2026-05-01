@@ -8,9 +8,9 @@
 
 ## Repo Purpose
 
-Repo de código del proyecto GrowLab. Proyecto piloto del sistema de bóveda
-Obsidian como OS de desarrollo. El propósito técnico real se completará cuando
-arranque el desarrollo activo.
+GrowLab — aplicación fullstack TypeScript para gestión de cultivos de cannabis.
+Stack: TanStack Start + React 18 + Drizzle ORM + PostgreSQL + Tailwind CSS.
+Auth con JWT (access token + refresh token httpOnly cookie).
 
 ---
 
@@ -18,16 +18,30 @@ arranque el desarrollo activo.
 
 ```bash
 # Instalación de dependencias
-# (completar según el stack del proyecto)
-
-# Ejecutar tests
-# (completar según el stack del proyecto)
-
-# Build
-# (completar según el stack del proyecto)
+pnpm install
 
 # Servidor de desarrollo
-# (completar según el stack del proyecto)
+pnpm dev
+
+# Build producción
+pnpm build
+
+# Servidor producción
+pnpm start
+
+# Migraciones de base de datos
+pnpm db:generate   # Generar migraciones desde el schema
+pnpm db:migrate    # Aplicar migraciones pendientes
+pnpm db:push       # Push directo del schema (sin migration file)
+pnpm db:studio     # Abrir Drizzle Studio (UI para la DB)
+
+# Tests
+pnpm test          # Vitest en modo watch
+pnpm test:run      # Vitest una sola ejecución
+
+# Calidad de código
+pnpm lint          # ESLint
+pnpm typecheck     # TypeScript check sin emit
 ```
 
 ---

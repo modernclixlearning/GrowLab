@@ -61,12 +61,21 @@ coverage/
 .nyc_output/
 htmlcov/
 
-# ── Stack específico ──────────────────────────────────────────────────────────
-# Agregar aquí las reglas específicas del stack del proyecto
+# ── Stack específico (TanStack Start / Vite / Drizzle) ──────────────────────
+.output/
+.vinxi/
+.vercel
+*.tsbuildinfo
+*.db
+*.sqlite
+*.sqlite3
+.pnp
+.pnp.js
+tmp/
+temp/
+*.tmp
 
 # ── Repos Git anidados (working trees independientes con su propio remote) ────
-# El wrapper no los rastrea como gitlinks; cada uno se gestiona desde su propio
-# repo. Si en el futuro se decide convertirlos en submódulos formales, eliminar
-# estas líneas y usar `git submodule add`.
-GrowLab-agent1/
+# orchestrator/ tiene su propio remote git@github.com:modernclixlearning/orchestrator.git
+# Se mantiene en disco pero fuera del scope de este repo.
 orchestrator/
