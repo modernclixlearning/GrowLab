@@ -3,7 +3,6 @@
  */
 
 import { createAPIFileRoute } from '@tanstack/start/api'
-import { json } from '@tanstack/start'
 import { loginSchema } from '@/server/api/auth/schemas'
 import { login } from '@/server/api/auth/service'
 import { setRefreshTokenCookie } from '@/server/lib/cookies'
@@ -36,7 +35,7 @@ export const Route = createAPIFileRoute('/api/auth/login')({
           fieldErrors[field] = error.message
         }
 
-        return json(
+        return Response.json(
           {
             success: false,
             error: {
@@ -53,7 +52,7 @@ export const Route = createAPIFileRoute('/api/auth/login')({
       const result = await login(validation.data)
 
       if (!result.success) {
-        return json(
+        return Response.json(
           { success: false, error: result.error },
           { status: 401 }
         )
@@ -63,7 +62,7 @@ export const Route = createAPIFileRoute('/api/auth/login')({
       setRefreshTokenCookie(context.event, result.data.refreshToken)
 
       // Return user and access token
-      return json({
+      return Response.json({
         success: true,
         data: {
           user: result.data.user,
@@ -72,7 +71,7 @@ export const Route = createAPIFileRoute('/api/auth/login')({
       })
     } catch (error) {
       console.error('Login error:', error)
-      return json(
+      return Response.json(
         {
           success: false,
           error: {

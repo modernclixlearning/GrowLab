@@ -1,12 +1,15 @@
 /**
  * GrowLab Dashboard Page
  * 
- * Main authenticated dashboard view.
+ * Main authenticated dashboard view with real plant data.
  */
 
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { Leaf, LogOut, Settings, Plus } from 'lucide-react'
+import { useState } from 'react'
+import { Leaf, LogOut, Settings, Plus, Sprout, TreePine } from 'lucide-react'
 import { useAuth } from '@/lib/stores/auth'
+import { usePlants } from '@/lib/hooks/usePlants'
+import { AddPlantModal } from '@/components/plants/AddPlantModal'
 
 export const Route = createFileRoute('/dashboard')({
   component: DashboardPage,
@@ -15,6 +18,8 @@ export const Route = createFileRoute('/dashboard')({
 function DashboardPage() {
   const navigate = useNavigate()
   const { user, isAuthenticated, isLoading, logout } = useAuth()
+  const { data: plantsData } = usePlants({ limit: 100 })
+  const [showAddModal, setShowAddModal] = useState(false)
 
   // Redirect to login if not authenticated
   if (!isLoading && !isAuthenticated) {
@@ -37,6 +42,17 @@ function DashboardPage() {
     await logout()
     navigate({ to: '/' })
   }
+
+  const totalPlants = plantsData?.total ?? 0
+  const activePlants = plantsData?.plants.filter(
+    (p) => p.growthStage !== 'completed'
+  ).length ?? 0
+  const seedlings = plantsData?.plants.filter(
+    (p) => p.growthStage === 'seedling'
+  ).length ?? 0
+  const flowering = plantsData?.plants.filter(
+    (p) => p.growthStage === 'flowering'
+  ).length ?? 0
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -86,49 +102,97 @@ function DashboardPage() {
 
         {/* Stats Grid */}
         <div className="mb-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          <button
+            onClick={() => navigate({ to: '/garden' })}
+            className="text-left"
+          >
+            <StatCard
+              title="Active Plants"
+              value={String(activePlants)}
+              icon={<Leaf className="h-6 w-6" />}
+              color="primary"
+            />
+          </button>
           <StatCard
-            title="Active Plants"
-            value="0"
-            icon={<Leaf className="h-6 w-6" />}
-            color="primary"
-          />
-          <StatCard
-            title="Care Tasks Today"
-            value="0"
-            icon={<Plus className="h-6 w-6" />}
+            title="Total Plants"
+            value={String(totalPlants)}
+            icon={<TreePine className="h-6 w-6" />}
             color="accent"
           />
           <StatCard
-            title="This Week's Logs"
-            value="0"
-            icon={<Plus className="h-6 w-6" />}
+            title="Seedlings"
+            value={String(seedlings)}
+            icon={<Sprout className="h-6 w-6" />}
             color="secondary"
           />
           <StatCard
-            title="Photos"
-            value="0"
-            icon={<Plus className="h-6 w-6" />}
+            title="Flowering"
+            value={String(flowering)}
+            icon={<Leaf className="h-6 w-6" />}
             color="gray"
           />
         </div>
 
-        {/* Empty State */}
-        <div className="card text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary-100">
-            <Leaf className="h-8 w-8 text-primary-600" />
+        {/* Content */}
+        {totalPlants > 0 ? (
+          <div className="card">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900">Your Garden</h2>
+              <button
+                onClick={() => navigate({ to: '/garden' })}
+                className="text-sm font-medium text-primary-700 hover:text-primary-800"
+              >
+                View All
+              </button>
+            </div>
+            <p className="text-gray-600 mb-4">
+              You have {activePlants} active plant{activePlants !== 1 ? 's' : ''} growing.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => navigate({ to: '/garden' })}
+                className="btn-primary"
+              >
+                <Leaf className="mr-2 h-4 w-4" />
+                View Garden
+              </button>
+              <button
+                onClick={() => setShowAddModal(true)}
+                className="btn-secondary"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Add Plant
+              </button>
+            </div>
           </div>
-          <h2 className="mb-2 text-xl font-semibold text-gray-900">
-            No plants yet
-          </h2>
-          <p className="mb-6 text-gray-600">
-            Start your garden by adding your first plant
-          </p>
-          <button className="btn-primary">
-            <Plus className="mr-2 h-4 w-4" />
-            Add Your First Plant
-          </button>
-        </div>
+        ) : (
+          /* Empty State */
+          <div className="card text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary-100">
+              <Leaf className="h-8 w-8 text-primary-600" />
+            </div>
+            <h2 className="mb-2 text-xl font-semibold text-gray-900">
+              No plants yet
+            </h2>
+            <p className="mb-6 text-gray-600">
+              Start your garden by adding your first plant
+            </p>
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="btn-primary"
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Add Your First Plant
+            </button>
+          </div>
+        )}
       </main>
+
+      {/* Add Plant Modal */}
+      <AddPlantModal
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+      />
     </div>
   )
 }

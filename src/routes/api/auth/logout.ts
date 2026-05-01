@@ -3,7 +3,6 @@
  */
 
 import { createAPIFileRoute } from '@tanstack/start/api'
-import { json } from '@tanstack/start'
 import { logout } from '@/server/api/auth/service'
 import { getRefreshTokenCookie, clearRefreshTokenCookie } from '@/server/lib/cookies'
 
@@ -32,7 +31,7 @@ export const Route = createAPIFileRoute('/api/auth/logout')({
       // Clear refresh token cookie
       clearRefreshTokenCookie(context.event)
 
-      return json({
+      return Response.json({
         success: true,
         data: {
           message: 'Logged out successfully',
@@ -43,7 +42,7 @@ export const Route = createAPIFileRoute('/api/auth/logout')({
       // Still clear cookie even on error
       clearRefreshTokenCookie(context.event)
 
-      return json({
+      return Response.json({
         success: true,
         data: {
           message: 'Logged out successfully',

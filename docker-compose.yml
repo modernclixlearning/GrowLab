@@ -1,0 +1,45 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: growlab-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: growlab
+      POSTGRES_PASSWORD: growlab
+      POSTGRES_DB: growlab
+    ports:
+      - "5432:5432"
+    volumes:
+      - growlab_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U growlab -d growlab"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: growlab-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://growlab:growlab@db:5432/growlab
+      JWT_ACCESS_SECRET: dev-access-secret-change-in-production-k9x2m
+      JWT_REFRESH_SECRET: dev-refresh-secret-change-in-production-p7w4n
+      NODE_ENV: development
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./src:/app/src
+    develop:
+      watch:
+        - action: sync
+          path: ./src
+          target: /app/src
+
+volumes:
+  growlab_pgdata:

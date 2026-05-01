@@ -6,7 +6,6 @@
  */
 
 import { createAPIFileRoute } from '@tanstack/start/api'
-import { json } from '@tanstack/start'
 import { registerSchema } from '@/server/api/auth/schemas'
 import { register } from '@/server/api/auth/service'
 import { setRefreshTokenCookie } from '@/server/lib/cookies'
@@ -40,7 +39,7 @@ export const Route = createAPIFileRoute('/api/auth/register')({
           fieldErrors[field] = error.message
         }
 
-        return json(
+        return Response.json(
           {
             success: false,
             error: {
@@ -57,7 +56,7 @@ export const Route = createAPIFileRoute('/api/auth/register')({
       const result = await register(validation.data)
 
       if (!result.success) {
-        return json(
+        return Response.json(
           { success: false, error: result.error },
           { status: 400 }
         )
@@ -67,7 +66,7 @@ export const Route = createAPIFileRoute('/api/auth/register')({
       setRefreshTokenCookie(context.event, result.data.refreshToken)
 
       // Return user and access token (not refresh token in body)
-      return json(
+      return Response.json(
         {
           success: true,
           data: {
@@ -79,7 +78,7 @@ export const Route = createAPIFileRoute('/api/auth/register')({
       )
     } catch (error) {
       console.error('Register error:', error)
-      return json(
+      return Response.json(
         {
           success: false,
           error: {

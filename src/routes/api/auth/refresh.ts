@@ -3,7 +3,6 @@
  */
 
 import { createAPIFileRoute } from '@tanstack/start/api'
-import { json } from '@tanstack/start'
 import { refresh } from '@/server/api/auth/service'
 import { getRefreshTokenCookie } from '@/server/lib/cookies'
 
@@ -26,7 +25,7 @@ export const Route = createAPIFileRoute('/api/auth/refresh')({
       const refreshToken = getRefreshTokenCookie(context.event)
 
       if (!refreshToken) {
-        return json(
+        return Response.json(
           {
             success: false,
             error: {
@@ -42,13 +41,13 @@ export const Route = createAPIFileRoute('/api/auth/refresh')({
       const result = await refresh(refreshToken)
 
       if (!result.success) {
-        return json(
+        return Response.json(
           { success: false, error: result.error },
           { status: 401 }
         )
       }
 
-      return json({
+      return Response.json({
         success: true,
         data: {
           accessToken: result.data.accessToken,
@@ -56,7 +55,7 @@ export const Route = createAPIFileRoute('/api/auth/refresh')({
       })
     } catch (error) {
       console.error('Refresh error:', error)
-      return json(
+      return Response.json(
         {
           success: false,
           error: {

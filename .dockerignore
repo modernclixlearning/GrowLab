@@ -1,0 +1,17 @@
+node_modules
+npm-debug.log*
+.git
+.gitignore
+.env
+.env.*
+!.env.example
+coverage
+.output
+dist
+build
+drizzle
+*.md
+.vscode
+.idea
+__pycache__
+*.pyc

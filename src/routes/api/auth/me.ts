@@ -3,7 +3,6 @@
  */
 
 import { createAPIFileRoute } from '@tanstack/start/api'
-import { json } from '@tanstack/start'
 import { getCurrentUser } from '@/server/api/auth/service'
 import { verifyAccessToken } from '@/server/lib/jwt'
 
@@ -26,7 +25,7 @@ export const Route = createAPIFileRoute('/api/auth/me')({
       const authHeader = request.headers.get('Authorization')
 
       if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return json(
+        return Response.json(
           {
             success: false,
             error: {
@@ -45,7 +44,7 @@ export const Route = createAPIFileRoute('/api/auth/me')({
       const payload = await verifyAccessToken(token)
 
       if (!payload) {
-        return json(
+        return Response.json(
           {
             success: false,
             error: {
@@ -61,13 +60,13 @@ export const Route = createAPIFileRoute('/api/auth/me')({
       const result = await getCurrentUser(payload.userId)
 
       if (!result.success) {
-        return json(
+        return Response.json(
           { success: false, error: result.error },
           { status: 404 }
         )
       }
 
-      return json({
+      return Response.json({
         success: true,
         data: {
           user: result.data.user,
@@ -75,7 +74,7 @@ export const Route = createAPIFileRoute('/api/auth/me')({
       })
     } catch (error) {
       console.error('Get me error:', error)
-      return json(
+      return Response.json(
         {
           success: false,
           error: {
