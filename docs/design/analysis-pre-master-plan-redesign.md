@@ -5,9 +5,9 @@ type: pre-master-plan-analysis
 date: 2026-05-08
 status: in-progress
 inputs:
-  - 01_PROJECTS/growlab/design/prototype/        # bundle Claude Design (handoff)
-  - 01_PROJECTS/growlab/code/                    # repo de producción
-trigger: 'necesitamos que la app luzca como 01_PROJECTS/growlab/design/prototype/'
+  - external/vault://01_PROJECTS/growlab/design/prototype/   # bundle Claude Design (handoff) — vive en la bóveda Obsidian
+  - this-repo://                                              # repo de producción (este repo, GrowLab)
+trigger: 'necesitamos que la app luzca como <vault>/01_PROJECTS/growlab/design/prototype/'
 ---
 
 # Análisis Pre-Master Plan — Rediseño visual GrowLab
@@ -15,13 +15,18 @@ trigger: 'necesitamos que la app luzca como 01_PROJECTS/growlab/design/prototype
 > Documento generado por el skill `analisis-pre-master-plan` el 2026-05-08.
 > No define arquitectura, no divide en fases, no escribe código.
 > Sirve como input directo del Plan Maestro.
+>
+> **Convención de paths en este doc:**
+> los paths sin prefijo son **relativos a este repo** (`modernclixlearning/GrowLab`).
+> Los paths del prototipo de Claude Design viven en una bóveda Obsidian externa
+> y se marcan explícitamente como `<vault>/...`.
 
 ## 1. Encuadre
 
 El usuario pide alinear visualmente la app de producción
-(`01_PROJECTS/growlab/code/`, React + Vite + Tailwind + Hono + Drizzle)
+(este repo `modernclixlearning/GrowLab`, React + Vite + Tailwind + Hono + Drizzle)
 con un prototipo HTML/JSX entregado por Claude Design en
-`01_PROJECTS/growlab/design/prototype/` (Android phone, dark + neon green,
+`<vault>/01_PROJECTS/growlab/design/prototype/` (Android phone, dark + neon green,
 5 pestañas, frame 412×892).
 
 La frase *"que la app luzca como…"* admitía múltiples lecturas; quedaron
@@ -51,7 +56,7 @@ resueltas en la ronda de incógnitas (ver §6).
 - F7. **FAB central** "Add Plant" en la barra inferior, presente en todas
   las pantallas excepto en flujo modal.
 - F8. **Toasts globales** confirmando acciones (alineado con regla Sonner
-  declarada en `code/CLAUDE.md`).
+  declarada en [`CLAUDE.md`](../../CLAUDE.md)).
 - F9. **Live status pulse** "SYSTEM ONLINE — N ACTIVE PLANTS · M FLOWERING"
   en Garden (estética hi-tech).
 
@@ -82,11 +87,11 @@ resueltas en la ronda de incógnitas (ver §6).
 
 ### 3.1 Explícitos (prototipo o reglas de repo)
 
-- R1. CRUD con feedback Sonner (regla `code/CLAUDE.md` § UI Feedback Standard).
+- R1. CRUD con feedback Sonner (regla [`CLAUDE.md`](../../CLAUDE.md) § UI Feedback Standard).
 - R2. Mantener convención de errores
   `{ success, error: { code, message, fields } }` y `ApiResponseError`.
 - R3. No tocar `.env`, no commitear secretos.
-- R4. No commits directos a `main` del repo `code/`; rama descriptiva.
+- R4. No commits directos a `main` de este repo; rama descriptiva.
 - R5. Tipografías declaradas en `index.html` del prototipo:
   Sora, Inter, JetBrains Mono.
 - R6. Tokens CSS exactos: 8 superficies + 5 stage/status colors + 4 radii.
@@ -97,7 +102,8 @@ resueltas en la ronda de incógnitas (ver §6).
 ### 3.2 Implícitos (deducidos del contraste prototipo↔producción)
 
 - I1. **Reemplazo total** de paleta light → dark+neón
-  (resolución ?1: `tailwind.config` y `globals.css` actuales dejan de ser
+  (resolución ?1: [`tailwind.config.ts`](../../tailwind.config.ts) y
+  [`src/styles/globals.css`](../../src/styles/globals.css) actuales dejan de ser
   fuente de verdad).
 - I2. **Mobile-first responsive** — implica cambiar contenedor, header, nav.
 - I3. Reemplazar header "logo + Settings + Logout topbar" por
@@ -122,9 +128,9 @@ resueltas en la ronda de incógnitas (ver §6).
   Babel-standalone + CSS plano + SVG inline — **no usa Tailwind ni recharts**.
   La conversión exige decidir en qué tecnología viven los tokens
   (CSS variables vs `tailwind.config`).
-- T2. Tailwind config actual define paleta `primary/secondary/accent`
-  verde apagada (`#1a4d2e` / `#3d7245`) que **contradice** las variables
-  del prototipo (`#07120e` / `#22e26a`).
+- T2. [`tailwind.config.ts`](../../tailwind.config.ts) actual define paleta
+  `primary/secondary/accent` verde apagada (`#1a4d2e` / `#3d7245`) que
+  **contradice** las variables del prototipo (`#07120e` / `#22e26a`).
 - T3. El prototipo usa `color-mix(in oklab, …)` y `backdrop-filter: blur` —
   soporte limitado a navegadores modernos.
 - T4. **Pipeline de imágenes ampliado** (resolución ?10):
@@ -142,9 +148,10 @@ resueltas en la ronda de incógnitas (ver §6).
 
 ### 4.3 Operativas / proceso
 
-- O1. CLAUDE.md del repo `code/` prohíbe escribir en la bóveda Obsidian
-  desde el agente del repo. Este análisis se duplica en ambos repos
-  manualmente como artefacto de handoff.
+- O1. [`CLAUDE.md`](../../CLAUDE.md) de este repo prohíbe escribir en la
+  bóveda Obsidian desde el agente del repo. Este análisis se duplica en
+  ambos repos manualmente como artefacto de handoff (paths reescritos
+  según el repo destino).
 - O2. Tests Vitest deben seguir pasando; no hay tests visuales/snapshot.
 - O3. El prototipo es decorativo + interactivo cliente-only:
   no tiene API, no tiene auth, no tiene persistencia. Todo lo relevante
@@ -156,7 +163,7 @@ resueltas en la ronda de incógnitas (ver §6).
 
 ### 5.1 Brechas de modelo de datos
 
-| Concepto en prototipo | Existencia en `types/plants.ts` |
+| Concepto en prototipo | Existencia en [`src/types/plants.ts`](../../src/types/plants.ts) |
 |---|---|
 | `stage`: `seedling/veg/flower` (3 valores) | `growthStage`: 7 valores. Resolución ?6 = **coexisten** vía toggle Basic/Expert |
 | `strain`: string libre ("Pure Indica", "Sour Diesel") | `strainType`: enum (`indica/sativa/hybrid/auto`) — el "Sour Diesel" es **nombre comercial**, no tipo |
@@ -335,25 +342,38 @@ diferirse al Plan Maestro.
 
 ## 10. Material de partida disponible
 
-### Prototipo
-- `01_PROJECTS/growlab/design/prototype/index.html` — entry
-- `01_PROJECTS/growlab/design/prototype/styles.css` — tokens y componentes
-- `01_PROJECTS/growlab/design/prototype/screens/` —
-  garden, dashboard, plant-detail, add-plant, charts
-- `01_PROJECTS/growlab/design/prototype/uploads/` —
-  9 screenshots de referencia
-- `01_PROJECTS/growlab/design/prototype/{app,android-frame,tweaks-panel,components,data}.jsx`
+### Prototipo (externo — bóveda Obsidian)
 
-### Producción actual
-- `01_PROJECTS/growlab/code/src/App.tsx` — router con 6 rutas
-- `01_PROJECTS/growlab/code/src/routes/{garden,dashboard,login,register,index}.tsx`
-- `01_PROJECTS/growlab/code/src/routes/plants/$plantId.tsx`
-- `01_PROJECTS/growlab/code/src/components/plants/{PlantCard,AddPlantModal}.tsx`
-- `01_PROJECTS/growlab/code/src/components/care-logs/{AddCareLogModal,CareLogList}.tsx`
-- `01_PROJECTS/growlab/code/tailwind.config.ts`
-- `01_PROJECTS/growlab/code/src/styles/globals.css`
-- `01_PROJECTS/growlab/code/src/types/plants.ts`
+> Estos paths viven en una bóveda Obsidian externa a este repositorio
+> (no son navegables desde GitHub). Se listan aquí como referencia del
+> input de diseño.
+
+- `<vault>/01_PROJECTS/growlab/design/prototype/index.html` — entry
+- `<vault>/01_PROJECTS/growlab/design/prototype/styles.css` — tokens y componentes
+- `<vault>/01_PROJECTS/growlab/design/prototype/screens/` —
+  `garden.jsx`, `dashboard.jsx`, `plant-detail.jsx`, `add-plant.jsx`, `charts.jsx`
+- `<vault>/01_PROJECTS/growlab/design/prototype/uploads/` —
+  9 screenshots de referencia
+- `<vault>/01_PROJECTS/growlab/design/prototype/`:
+  `app.jsx`, `android-frame.jsx`, `tweaks-panel.jsx`, `components.jsx`, `data.jsx`
+
+### Producción actual (este repo)
+
+- [`src/App.tsx`](../../src/App.tsx) — router con 6 rutas
+- [`src/routes/garden.tsx`](../../src/routes/garden.tsx)
+- [`src/routes/dashboard.tsx`](../../src/routes/dashboard.tsx)
+- [`src/routes/login.tsx`](../../src/routes/login.tsx)
+- [`src/routes/register.tsx`](../../src/routes/register.tsx)
+- [`src/routes/index.tsx`](../../src/routes/index.tsx)
+- [`src/routes/plants/$plantId.tsx`](../../src/routes/plants/$plantId.tsx)
+- [`src/components/plants/PlantCard.tsx`](../../src/components/plants/PlantCard.tsx)
+- [`src/components/plants/AddPlantModal.tsx`](../../src/components/plants/AddPlantModal.tsx)
+- [`src/components/care-logs/AddCareLogModal.tsx`](../../src/components/care-logs/AddCareLogModal.tsx)
+- [`src/components/care-logs/CareLogList.tsx`](../../src/components/care-logs/CareLogList.tsx)
+- [`tailwind.config.ts`](../../tailwind.config.ts)
+- [`src/styles/globals.css`](../../src/styles/globals.css)
+- [`src/types/plants.ts`](../../src/types/plants.ts)
 
 ### Reglas del repo
-- `01_PROJECTS/growlab/code/CLAUDE.md` —
+- [`CLAUDE.md`](../../CLAUDE.md) —
   toast con Sonner, no commits a `main`, no `.env`.
