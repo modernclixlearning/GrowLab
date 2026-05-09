@@ -1,6 +1,6 @@
 /**
  * GrowLab - Care Log List Component
- * 
+ *
  * Displays a chronological list of care log entries for a plant.
  * Includes quick action buttons for common care activities.
  */
@@ -9,6 +9,7 @@ import { useState } from 'react'
 import { Droplets, FlaskConical, Scissors, ArrowRightLeft, Move, CircleDot, Plus } from 'lucide-react'
 import { useCareLogs } from '@/lib/hooks/useCareLogs'
 import { CARE_LOG_TYPE_CONFIG } from '@/types/care-logs'
+import { Eyebrow } from '@/components/shell'
 import type { CareLogType, CareLog } from '@/types/care-logs'
 import { AddCareLogModal } from './AddCareLogModal'
 
@@ -61,6 +62,9 @@ function formatAmount(log: CareLog): string | null {
   return log.unit ? `${formatted} ${log.unit}` : formatted
 }
 
+const QUICK_ACTION_BASE =
+  'inline-flex items-center gap-1.5 rounded-md border px-3 py-2 text-xs font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg'
+
 export function CareLogList({ plantId }: CareLogListProps) {
   const { data, isLoading } = useCareLogs(plantId)
   const [showAddModal, setShowAddModal] = useState(false)
@@ -79,33 +83,33 @@ export function CareLogList({ plantId }: CareLogListProps) {
   return (
     <div>
       {/* Quick Action Buttons */}
-      <div className="card mb-4">
-        <h3 className="mb-3 text-sm font-medium text-gray-700">Quick Actions</h3>
+      <div className="mb-4 rounded-lg border border-line bg-card p-4">
+        <Eyebrow tone="muted" className="mb-3 block">Quick Actions</Eyebrow>
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => handleQuickAction('water')}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-100"
+            className={`${QUICK_ACTION_BASE} border-status-water/40 bg-status-water/10 text-status-water hover:bg-status-water/20`}
           >
             <Droplets className="h-4 w-4" />
             Water
           </button>
           <button
             onClick={() => handleQuickAction('feed')}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-amber-50 px-3 py-2 text-sm font-medium text-amber-700 transition-colors hover:bg-amber-100"
+            className={`${QUICK_ACTION_BASE} border-status-thirsty/40 bg-status-thirsty/10 text-status-thirsty hover:bg-status-thirsty/20`}
           >
             <FlaskConical className="h-4 w-4" />
             Feed
           </button>
           <button
             onClick={() => handleQuickAction('prune')}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-green-50 px-3 py-2 text-sm font-medium text-green-700 transition-colors hover:bg-green-100"
+            className={`${QUICK_ACTION_BASE} border-stage-seedling/40 bg-stage-seedling/10 text-stage-seedling hover:bg-stage-seedling/20`}
           >
             <Scissors className="h-4 w-4" />
             Prune
           </button>
           <button
             onClick={handleOpenGeneral}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-gray-50 px-3 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-100"
+            className={`${QUICK_ACTION_BASE} border-line bg-card-2 text-fg-2 hover:bg-card hover:text-fg`}
           >
             <Plus className="h-4 w-4" />
             More
@@ -114,23 +118,23 @@ export function CareLogList({ plantId }: CareLogListProps) {
       </div>
 
       {/* Care Log Timeline */}
-      <div className="card">
+      <div className="rounded-lg border border-line bg-card p-4">
         <div className="mb-3 flex items-center justify-between">
-          <h3 className="text-sm font-medium text-gray-700">Care History</h3>
+          <Eyebrow tone="muted">Care History</Eyebrow>
           {data && data.total > 0 && (
-            <span className="text-xs text-gray-400">{data.total} entries</span>
+            <span className="font-mono text-[11px] text-fg-3">{data.total} entries</span>
           )}
         </div>
 
         {isLoading ? (
           <div className="py-8 text-center">
-            <p className="text-sm text-gray-400">Loading care history...</p>
+            <p className="text-sm text-fg-3">Loading care history...</p>
           </div>
         ) : !data || data.careLogs.length === 0 ? (
           <div className="py-8 text-center">
-            <CircleDot className="mx-auto mb-2 h-8 w-8 text-gray-300" />
-            <p className="text-sm text-gray-400">No care events logged yet</p>
-            <p className="mt-1 text-xs text-gray-400">Use the quick actions above to start tracking</p>
+            <CircleDot className="mx-auto mb-2 h-8 w-8 text-fg-4" />
+            <p className="text-sm text-fg-3">No care events logged yet</p>
+            <p className="mt-1 text-xs text-fg-4">Use the quick actions above to start tracking</p>
           </div>
         ) : (
           <div className="space-y-1">
@@ -142,30 +146,30 @@ export function CareLogList({ plantId }: CareLogListProps) {
               return (
                 <div
                   key={log.id}
-                  className="flex items-start gap-3 rounded-lg px-2 py-2.5 transition-colors hover:bg-gray-50"
+                  className="flex items-start gap-3 rounded-md px-2 py-2.5 transition-colors hover:bg-card-2"
                 >
                   {/* Icon */}
-                  <div className={`mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full ${config?.bgColor ?? 'bg-gray-100'}`}>
-                    <Icon className={`h-4 w-4 ${config?.color ?? 'text-gray-600'}`} />
+                  <div className={`mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full ${config?.bgColor ?? 'bg-card-2'}`}>
+                    <Icon className={`h-4 w-4 ${config?.color ?? 'text-fg-2'}`} />
                   </div>
 
                   {/* Content */}
                   <div className="min-w-0 flex-1">
                     <div className="flex items-baseline justify-between gap-2">
-                      <p className="text-sm font-medium text-gray-900">
+                      <p className="text-sm font-medium text-fg">
                         {config?.label ?? log.logType}
                         {amountStr && (
-                          <span className="ml-1 font-normal text-gray-500">
+                          <span className="ml-1 font-normal text-fg-3">
                             &middot; {amountStr}
                           </span>
                         )}
                       </p>
-                      <span className="flex-shrink-0 text-xs text-gray-400">
+                      <span className="flex-shrink-0 font-mono text-[10px] text-fg-3">
                         {formatLogDate(log.loggedAt)}
                       </span>
                     </div>
                     {log.notes && (
-                      <p className="mt-0.5 text-xs text-gray-500">{log.notes}</p>
+                      <p className="mt-0.5 text-xs text-fg-3">{log.notes}</p>
                     )}
                   </div>
                 </div>

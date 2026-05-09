@@ -1,6 +1,6 @@
 /**
  * GrowLab Add Plant Modal
- * 
+ *
  * Modal form for creating a new plant with name, strain type,
  * growth stage, and optional notes.
  */
@@ -13,6 +13,7 @@ import { toast } from 'sonner'
 import { X, Leaf, AlertCircle } from 'lucide-react'
 import { useCreatePlant } from '@/lib/hooks/usePlants'
 import { getApiErrorToastMessage } from '@/lib/api/errors'
+import { H2 } from '@/components/shell'
 import type { GrowthStage, StrainType } from '@/types/plants'
 import { GROWTH_STAGE_CONFIG, STRAIN_TYPE_CONFIG } from '@/types/plants'
 
@@ -37,6 +38,12 @@ interface AddPlantModalProps {
 
 /** Stages available when creating a new plant (can't start as completed) */
 const CREATABLE_STAGES: GrowthStage[] = ['seedling', 'vegetative', 'flowering', 'harvesting', 'drying', 'curing']
+
+const labelClasses = 'mb-2 block text-sm font-medium text-fg-2'
+const inputClasses =
+  'w-full rounded-md border bg-bg-2 px-3 py-2.5 text-sm text-fg placeholder:text-fg-4 focus:outline-none focus:ring-1 transition-colors'
+const inputBorderOk = 'border-line focus:border-accent focus:ring-accent'
+const inputBorderErr = 'border-status-warn focus:border-status-warn focus:ring-status-warn'
 
 export function AddPlantModal({ isOpen, onClose, onSuccess }: AddPlantModalProps) {
   const createPlant = useCreatePlant()
@@ -83,26 +90,26 @@ export function AddPlantModal({ isOpen, onClose, onSuccess }: AddPlantModalProps
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/50"
+        className="absolute inset-0 bg-bg/80"
         onClick={handleClose}
       />
 
       {/* Modal */}
-      <div className="relative w-full max-w-lg rounded-xl bg-white p-6 shadow-xl mx-4">
+      <div className="relative mx-auto w-full max-w-lg rounded-t-2xl border-t border-line bg-card p-6 shadow-xl animate-gl-modal-in sm:mx-4 sm:rounded-2xl sm:border">
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-100">
-              <Leaf className="h-5 w-5 text-primary-700" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-md bg-accent-soft text-accent">
+              <Leaf className="h-5 w-5" />
             </div>
-            <h2 className="text-xl font-bold text-gray-900">Add New Plant</h2>
+            <H2 className="text-[20px]">Add New Plant</H2>
           </div>
           <button
             onClick={handleClose}
-            className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+            className="rounded-md p-2 text-fg-3 transition-colors hover:bg-card-2 hover:text-fg focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
             aria-label="Close add plant modal"
           >
             <X className="h-5 w-5" />
@@ -112,7 +119,7 @@ export function AddPlantModal({ isOpen, onClose, onSuccess }: AddPlantModalProps
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
           {/* Error */}
           {error && (
-            <div className="flex items-center gap-2 rounded-lg bg-red-50 p-4 text-red-700">
+            <div className="flex items-center gap-2 rounded-md border border-status-warn/40 bg-status-warn/10 p-3 text-status-warn">
               <AlertCircle className="h-5 w-5 flex-shrink-0" />
               <p className="text-sm">{error}</p>
             </div>
@@ -120,30 +127,30 @@ export function AddPlantModal({ isOpen, onClose, onSuccess }: AddPlantModalProps
 
           {/* Plant Name */}
           <div>
-            <label htmlFor="name" className="mb-2 block text-sm font-medium text-gray-700">
+            <label htmlFor="name" className={labelClasses}>
               Plant Name
             </label>
             <input
               {...register('name')}
               type="text"
               id="name"
-              className={`input ${errors.name ? 'input-error' : ''}`}
+              className={`${inputClasses} ${errors.name ? inputBorderErr : inputBorderOk}`}
               placeholder='e.g., "OG Kush #1"'
             />
             {errors.name && (
-              <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
+              <p className="mt-1 text-sm text-status-warn">{errors.name.message}</p>
             )}
           </div>
 
           {/* Strain Type */}
           <div>
-            <label htmlFor="strainType" className="mb-2 block text-sm font-medium text-gray-700">
+            <label htmlFor="strainType" className={labelClasses}>
               Strain Type
             </label>
             <select
               {...register('strainType')}
               id="strainType"
-              className={`input ${errors.strainType ? 'input-error' : ''}`}
+              className={`${inputClasses} ${errors.strainType ? inputBorderErr : inputBorderOk}`}
             >
               <option value="">Select strain type...</option>
               {(Object.entries(STRAIN_TYPE_CONFIG) as [StrainType, { label: string }][]).map(
@@ -155,13 +162,13 @@ export function AddPlantModal({ isOpen, onClose, onSuccess }: AddPlantModalProps
               )}
             </select>
             {errors.strainType && (
-              <p className="mt-1 text-sm text-red-600">{errors.strainType.message}</p>
+              <p className="mt-1 text-sm text-status-warn">{errors.strainType.message}</p>
             )}
           </div>
 
           {/* Growth Stage */}
           <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700">
+            <label className={labelClasses}>
               Current Growth Stage
             </label>
             <div className="grid grid-cols-3 gap-2">
@@ -178,11 +185,11 @@ export function AddPlantModal({ isOpen, onClose, onSuccess }: AddPlantModalProps
                       value={stage}
                       className="peer sr-only"
                     />
-                    <div className="rounded-lg border-2 border-gray-200 p-3 text-center transition-colors peer-checked:border-primary-500 peer-checked:bg-primary-50 hover:border-gray-300">
-                      <p className="text-sm font-medium text-gray-900">
+                    <div className="rounded-md border-2 border-line bg-bg-2 p-3 text-center transition-colors peer-checked:border-accent peer-checked:bg-accent-soft hover:border-line-2">
+                      <p className="text-sm font-medium text-fg">
                         {config.label}
                       </p>
-                      <p className="mt-0.5 text-xs text-gray-500">
+                      <p className="mt-0.5 text-xs text-fg-3">
                         {config.description}
                       </p>
                     </div>
@@ -194,14 +201,14 @@ export function AddPlantModal({ isOpen, onClose, onSuccess }: AddPlantModalProps
 
           {/* Notes */}
           <div>
-            <label htmlFor="notes" className="mb-2 block text-sm font-medium text-gray-700">
-              Notes <span className="text-gray-400">(optional)</span>
+            <label htmlFor="notes" className={labelClasses}>
+              Notes <span className="text-fg-4">(optional)</span>
             </label>
             <textarea
               {...register('notes')}
               id="notes"
               rows={3}
-              className="input resize-none"
+              className={`${inputClasses} ${inputBorderOk} resize-none`}
               placeholder="Any notes about this plant..."
             />
           </div>
@@ -211,14 +218,14 @@ export function AddPlantModal({ isOpen, onClose, onSuccess }: AddPlantModalProps
             <button
               type="button"
               onClick={handleClose}
-              className="btn-secondary flex-1"
+              className="inline-flex flex-1 items-center justify-center rounded-md border border-line bg-card-2 px-4 py-2.5 text-sm font-semibold text-fg transition-colors hover:bg-card focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={createPlant.isPending}
-              className="btn-primary flex-1"
+              className="inline-flex flex-1 items-center justify-center rounded-md bg-accent px-4 py-2.5 text-sm font-semibold text-bg shadow-accent-glow transition-transform hover:scale-[1.02] focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg disabled:opacity-60 disabled:hover:scale-100"
             >
               {createPlant.isPending ? 'Creating...' : 'Add Plant'}
             </button>

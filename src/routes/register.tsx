@@ -1,6 +1,6 @@
 /**
  * GrowLab Register Page
- * 
+ *
  * New user registration page with form validation.
  */
 
@@ -11,6 +11,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Leaf, Mail, Lock, User, AlertCircle } from 'lucide-react'
 import { useAuth } from '@/lib/stores/auth'
+import { Eyebrow, H1 } from '@/components/shell'
 
 const registerSchema = z
   .object({
@@ -31,6 +32,11 @@ const registerSchema = z
   })
 
 type RegisterFormData = z.infer<typeof registerSchema>
+
+const inputClasses =
+  'w-full rounded-md border bg-bg-2 pl-10 pr-3 py-2.5 text-sm text-fg placeholder:text-fg-4 focus:outline-none focus:ring-1 transition-colors'
+const inputBorderOk = 'border-line focus:border-accent focus:ring-accent'
+const inputBorderErr = 'border-status-warn focus:border-status-warn focus:ring-status-warn'
 
 export default function RegisterPage() {
   const navigate = useNavigate()
@@ -61,23 +67,26 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12">
+    <div className="flex min-h-screen items-center justify-center bg-bg px-4 py-12 text-fg">
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary-100">
-            <Leaf className="h-8 w-8 text-primary-700" />
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-accent-soft text-accent shadow-accent-glow">
+            <Leaf className="h-8 w-8" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">Create your account</h1>
-          <p className="mt-2 text-gray-600">Start tracking your plants today</p>
+          <Eyebrow tone="accent" className="mb-2 block">
+            GrowLab
+          </Eyebrow>
+          <H1 className="text-[26px]">Create your account</H1>
+          <p className="mt-2 text-sm text-fg-3">Start tracking your plants today</p>
         </div>
 
         {/* Form Card */}
-        <div className="card">
+        <div className="rounded-xl border border-line bg-card p-6">
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
             {/* Error Alert */}
             {error && (
-              <div className="flex items-center gap-2 rounded-lg bg-red-50 p-4 text-red-700">
+              <div className="flex items-center gap-2 rounded-md border border-status-warn/40 bg-status-warn/10 p-3 text-status-warn">
                 <AlertCircle className="h-5 w-5 flex-shrink-0" />
                 <p className="text-sm">{error}</p>
               </div>
@@ -87,23 +96,23 @@ export default function RegisterPage() {
             <div>
               <label
                 htmlFor="name"
-                className="mb-2 block text-sm font-medium text-gray-700"
+                className="mb-2 block text-sm font-medium text-fg-2"
               >
                 Full name
               </label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+                <User className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-fg-3" />
                 <input
                   {...register('name')}
                   type="text"
                   id="name"
                   autoComplete="name"
-                  className={`input pl-10 ${errors.name ? 'input-error' : ''}`}
+                  className={`${inputClasses} ${errors.name ? inputBorderErr : inputBorderOk}`}
                   placeholder="John Doe"
                 />
               </div>
               {errors.name && (
-                <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
+                <p className="mt-1 text-sm text-status-warn">{errors.name.message}</p>
               )}
             </div>
 
@@ -111,23 +120,23 @@ export default function RegisterPage() {
             <div>
               <label
                 htmlFor="email"
-                className="mb-2 block text-sm font-medium text-gray-700"
+                className="mb-2 block text-sm font-medium text-fg-2"
               >
                 Email address
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+                <Mail className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-fg-3" />
                 <input
                   {...register('email')}
                   type="email"
                   id="email"
                   autoComplete="email"
-                  className={`input pl-10 ${errors.email ? 'input-error' : ''}`}
+                  className={`${inputClasses} ${errors.email ? inputBorderErr : inputBorderOk}`}
                   placeholder="you@example.com"
                 />
               </div>
               {errors.email && (
-                <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
+                <p className="mt-1 text-sm text-status-warn">{errors.email.message}</p>
               )}
             </div>
 
@@ -135,23 +144,23 @@ export default function RegisterPage() {
             <div>
               <label
                 htmlFor="password"
-                className="mb-2 block text-sm font-medium text-gray-700"
+                className="mb-2 block text-sm font-medium text-fg-2"
               >
                 Password
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+                <Lock className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-fg-3" />
                 <input
                   {...register('password')}
                   type="password"
                   id="password"
                   autoComplete="new-password"
-                  className={`input pl-10 ${errors.password ? 'input-error' : ''}`}
+                  className={`${inputClasses} ${errors.password ? inputBorderErr : inputBorderOk}`}
                   placeholder="••••••••"
                 />
               </div>
               {errors.password && (
-                <p className="mt-1 text-sm text-red-600">
+                <p className="mt-1 text-sm text-status-warn">
                   {errors.password.message}
                 </p>
               )}
@@ -161,23 +170,23 @@ export default function RegisterPage() {
             <div>
               <label
                 htmlFor="confirmPassword"
-                className="mb-2 block text-sm font-medium text-gray-700"
+                className="mb-2 block text-sm font-medium text-fg-2"
               >
                 Confirm password
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+                <Lock className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-fg-3" />
                 <input
                   {...register('confirmPassword')}
                   type="password"
                   id="confirmPassword"
                   autoComplete="new-password"
-                  className={`input pl-10 ${errors.confirmPassword ? 'input-error' : ''}`}
+                  className={`${inputClasses} ${errors.confirmPassword ? inputBorderErr : inputBorderOk}`}
                   placeholder="••••••••"
                 />
               </div>
               {errors.confirmPassword && (
-                <p className="mt-1 text-sm text-red-600">
+                <p className="mt-1 text-sm text-status-warn">
                   {errors.confirmPassword.message}
                 </p>
               )}
@@ -187,7 +196,7 @@ export default function RegisterPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="btn-primary w-full"
+              className="inline-flex w-full items-center justify-center rounded-md bg-accent px-4 py-2.5 text-sm font-semibold text-bg shadow-accent-glow transition-transform hover:scale-[1.01] focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg disabled:opacity-60 disabled:hover:scale-100"
             >
               {isLoading ? 'Creating account...' : 'Create account'}
             </button>
@@ -195,8 +204,11 @@ export default function RegisterPage() {
 
           {/* Login Link */}
           <div className="mt-6 text-center text-sm">
-            <span className="text-gray-600">Already have an account? </span>
-            <a href="/login" className="font-medium text-primary-700 hover:text-primary-800">
+            <span className="text-fg-3">Already have an account? </span>
+            <a
+              href="/login"
+              className="font-medium text-accent transition-colors hover:text-fg"
+            >
               Sign in
             </a>
           </div>
