@@ -1,4 +1,5 @@
 import { Routes, Route } from 'react-router-dom'
+import { AppShell } from '@/components/shell'
 import HomePage from './routes/index'
 import LoginPage from './routes/login'
 import RegisterPage from './routes/register'
@@ -6,15 +7,48 @@ import DashboardPage from './routes/dashboard'
 import GardenPage from './routes/garden'
 import PlantDetailPage from './routes/plants/$plantId'
 
+/**
+ * Wraps an authenticated route in the AppShell chrome (BottomNav + FAB).
+ * Auth screens (login / register) and the public landing skip the shell
+ * to remain full-bleed.
+ */
+function Shelled({ children }: { children: React.ReactNode }) {
+  return <AppShell>{children}</AppShell>
+}
+
 export default function App() {
   return (
     <Routes>
+      {/* Full-bleed (no BottomNav) */}
       <Route path="/" element={<HomePage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
-      <Route path="/dashboard" element={<DashboardPage />} />
-      <Route path="/garden" element={<GardenPage />} />
-      <Route path="/plants/:plantId" element={<PlantDetailPage />} />
+
+      {/* Authenticated routes wrapped in AppShell */}
+      <Route
+        path="/dashboard"
+        element={
+          <Shelled>
+            <DashboardPage />
+          </Shelled>
+        }
+      />
+      <Route
+        path="/garden"
+        element={
+          <Shelled>
+            <GardenPage />
+          </Shelled>
+        }
+      />
+      <Route
+        path="/plants/:plantId"
+        element={
+          <Shelled>
+            <PlantDetailPage />
+          </Shelled>
+        }
+      />
     </Routes>
   )
 }

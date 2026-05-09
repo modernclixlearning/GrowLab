@@ -28,3 +28,26 @@
     @apply bg-bg text-fg font-body antialiased;
   }
 }
+
+/* ============================================================
+   Sonner toaster — token-driven theme overrides.
+   We disable Sonner's `richColors` and instead drive the look
+   from our theme tokens (card / line / fg / accent-glow). This
+   keeps toast styling consistent with the rest of the chrome.
+   ============================================================ */
+[data-sonner-toaster] {
+  --normal-bg: theme('colors.card.DEFAULT');
+  --normal-border: theme('colors.line.DEFAULT');
+  --normal-text: theme('colors.fg.DEFAULT');
+  --success-bg: theme('colors.card.DEFAULT');
+  --success-border: theme('colors.accent.DEFAULT');
+  --success-text: theme('colors.fg.DEFAULT');
+  --error-bg: theme('colors.card.DEFAULT');
+  --error-border: theme('colors.status.warn');
+  --error-text: theme('colors.fg.DEFAULT');
+  font-family: theme('fontFamily.body');
+}
+
+[data-sonner-toast][data-type='success'] {
+  box-shadow: theme('boxShadow.accent-glow');
+}
