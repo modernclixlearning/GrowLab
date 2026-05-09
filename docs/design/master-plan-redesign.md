@@ -295,8 +295,18 @@ Convención: cada fase con **objetivo**, **entregables**, **criterios done**,
   - Sonner restilado (theme dark + neón, glow opcional para success).
   - Pantallas existentes (Garden, Dashboard, Plant Detail, Login, Register,
     Home) re-skinadas mínimamente con los nuevos tokens, sin lógica nueva.
+  - **Visual regression harness (Playwright)**:
+    - Dependencia: `npm i -D @playwright/test`.
+    - `playwright.config.ts` con `testDir: 'tests/visual/'`, browser
+      `chromium`, viewport mobile-first `412×892` (Android del prototipo),
+      `expect.toHaveScreenshot.maxDiffPixelRatio: 0.001`.
+    - Scripts en `package.json`: `"test:e2e": "playwright test"`,
+      `"test:e2e:update": "playwright test --update-snapshots"`.
+    - `tests/visual/garden.spec.ts` con 1 golden inicial (Garden seed state).
+    - `.github/workflows/visual-regression.yml` opcional como nice-to-have
+      en F0; se vuelve obligatorio en F1.
 - **Done:**
-  - `pnpm typecheck` y `pnpm test:run` pasan.
+  - `npm run typecheck`, `npm run test:run`, y `npm run test:e2e` pasan.
   - Las 6 rutas actuales renderizan sin regresiones funcionales con dark
     theme.
   - Sonner muestra success/error con tokens nuevos.
@@ -516,7 +526,7 @@ Index: `idx_tents_user_id`.
 
 | Columna | Tipo Drizzle | Notas |
 |---|---|---|
-| `id` | `text().primaryKey()` | nanoid |
+| `id` | `text().primaryKey().$defaultFn(() => nanoid())` | |
 | `name` | `text().notNull().unique()` | "Northern Lights", "OG Kush" |
 | `strainType` | `text().notNull()` | indica/sativa/hybrid/auto |
 | `stageDurations` | `jsonb()` | `{ seedling: 14, vegetative: 35, flowering: 63, ... }` (días) |
@@ -531,7 +541,7 @@ GG #4, Sour Diesel, White Widow).
 
 | Columna | Tipo | Notas |
 |---|---|---|
-| `id` | `text().primaryKey()` | nanoid |
+| `id` | `text().primaryKey().$defaultFn(() => nanoid())` | |
 | `plantId` | `text().notNull().references(() => plants.id, { onDelete: 'cascade' })` | |
 | `stage` | `text().notNull()` | growthStage en el momento de subida |
 | `url` | `text().notNull()` | R2 URL canónica |
@@ -547,10 +557,10 @@ Index: `idx_plant_photos_plant_id_stage`.
 
 | Columna | Tipo | Notas |
 |---|---|---|
-| `id` | `text().primaryKey()` | nanoid |
+| `id` | `text().primaryKey().$defaultFn(() => nanoid())` | |
 | `userId` | `text().notNull().references(() => users.id, { onDelete: 'cascade' })` | |
-| `provider` | `text().notNull()` | `'govee' \| 'inkbird' \| 'switchbot'` |
-| `apiKeyEncrypted` | `text().notNull()` | AES-GCM con KEK (env) |
+| `provider` | `text().notNull()` | `'govee' \| 'inkbird' \| 'switchbot' \| 'manual'` |
+| `apiKeyEncrypted` | `text()` | nullable; AES-GCM con KEK (env). Required para `provider != 'manual'` (validación en API). |
 | `label` | `text().notNull()` | nombre visible |
 | `targetPlantId` | `text().references(() => plants.id, { onDelete: 'set null' })` | nullable |
 | `targetTentId` | `text().references(() => tents.id, { onDelete: 'set null' })` | nullable |
@@ -565,13 +575,13 @@ constraint o validación API).
 
 | Columna | Tipo | Notas |
 |---|---|---|
-| `id` | `text().primaryKey()` | nanoid |
+| `id` | `text().primaryKey().$defaultFn(() => nanoid())` | |
 | `sensorDeviceId` | `text().notNull().references(() => sensor_devices.id, { onDelete: 'cascade' })` | |
 | `plantId` | `text().references(() => plants.id, { onDelete: 'set null' })` | denormalizado para query |
 | `tentId` | `text().references(() => tents.id, { onDelete: 'set null' })` | |
 | `metric` | `text().notNull()` | `'humidity' \| 'temperature' \| 'light'` |
 | `value` | `numeric({ precision: 10, scale: 4 }).notNull()` | |
-| `unit` | `text().notNull()` | `'%' \| 'C' \| 'F' \| 'lux' \| 'h'` |
+| `unit` | `text().notNull()` | `'%' \| 'C' \| 'F' \| 'lux'` (humidity → `%`, temperature → `C`/`F`, light → `lux`) |
 | `recordedAt` | `timestamp({ withTimezone: true }).notNull()` | provided by sensor |
 
 Index: `idx_sensor_readings_metric_recordedAt` y compound
@@ -581,7 +591,7 @@ Index: `idx_sensor_readings_metric_recordedAt` y compound
 
 | Columna | Tipo | Notas |
 |---|---|---|
-| `id` | `text().primaryKey()` | nanoid |
+| `id` | `text().primaryKey().$defaultFn(() => nanoid())` | |
 | `plantId` | `text().notNull().references(() => plants.id, { onDelete: 'cascade' })` | |
 | `metric` | `text().notNull()` | `'height_cm' \| 'leaf_count'` (extensible) |
 | `value` | `numeric({ precision: 10, scale: 2 }).notNull()` | |
@@ -594,7 +604,7 @@ Index: `idx_sensor_readings_metric_recordedAt` y compound
 
 | Columna | Tipo | Notas |
 |---|---|---|
-| `id` | `text().primaryKey()` | |
+| `id` | `text().primaryKey().$defaultFn(() => nanoid())` | |
 | `userId` | `text().notNull().references(() => users.id, { onDelete: 'cascade' })` | |
 | `kind` | `text().notNull()` | `'care_due' \| 'sensor_alert' \| 'system'` |
 | `title` | `text().notNull()` | |
@@ -607,7 +617,7 @@ Index: `idx_sensor_readings_metric_recordedAt` y compound
 
 | Columna | Tipo | Notas |
 |---|---|---|
-| `id` | `text().primaryKey()` | |
+| `id` | `text().primaryKey().$defaultFn(() => nanoid())` | |
 | `userId` | `text().notNull().references(() => users.id, { onDelete: 'cascade' })` | |
 | `endpoint` | `text().notNull().unique()` | |
 | `keysP256dh` | `text().notNull()` | |
@@ -618,7 +628,7 @@ Index: `idx_sensor_readings_metric_recordedAt` y compound
 
 | Columna | Tipo | Notas |
 |---|---|---|
-| `id` | `text().primaryKey()` | |
+| `id` | `text().primaryKey().$defaultFn(() => nanoid())` | |
 | `userId` | `text().notNull().references(() => users.id, { onDelete: 'cascade' })` | |
 | `status` | `text().notNull()` | `'pending' \| 'ready' \| 'failed'` |
 | `format` | `text().notNull()` | `'csv' \| 'json'` (puede generar ambos como zip) |
@@ -791,11 +801,11 @@ interface SensorProvider {
 
 ### 6.4 Modo manual (issue 002 N6)
 
-- Usuario puede no configurar `sensor_devices` y registrar humidity/temp
-  manualmente desde Plant Detail (formulario). Estos registros van a
-  `sensor_readings` con `sensorDeviceId = null`? — **no**, viola FK. En su
-  lugar: crear un `sensor_devices` virtual `provider='manual'` por usuario
-  on-demand al primer registro manual.
+- Usuario puede no configurar credenciales cloud y registrar humidity/temp
+  manualmente desde Plant Detail (formulario). Para mantener el FK estricto
+  en `sensor_readings.sensorDeviceId`, se crea un `sensor_devices` virtual
+  con `provider = 'manual'` y `apiKeyEncrypted = NULL` por usuario,
+  on-demand al primer registro manual (ver §4.1).
 
 ### 6.5 Web BLE (roadmap)
 
@@ -822,8 +832,8 @@ Opciones consideradas:
 
 Se elige **Playwright** porque:
 
-- `pnpm test:run` ya es Vitest (unit). Playwright se añade como segundo
-  runner (`pnpm test:e2e`) sin colisión.
+- `npm run test:run` ya es Vitest (unit). Playwright se añade como segundo
+  runner (`npm run test:e2e`) sin colisión.
 - Stack ya tiene Vite dev server → Playwright lo arranca trivialmente.
 - Sin SaaS → cero coste fijo. Golden images viven en repo (~200 KB cada
   una, manageable).
@@ -884,7 +894,7 @@ R-2 (single source Tailwind config), R-7 (sensores reales mitigan
   pipeline, sensores, notifications, export) completas y con tests.
 - **Performance:** Lighthouse mobile ≥ 85 en Performance y ≥ 90 en
   Accessibility tras F6.
-- **Regresión cero:** `pnpm test:run` (Vitest) sigue verde en cada fase.
+- **Regresión cero:** `npm run test:run` (Vitest) sigue verde en cada fase.
 - **Migración limpia:** cada migration es aplicable forward + reversible
   back en local; cero filas perdidas en backfill care-logs.
 - **Coste IA:** ≤ 1 USD/usuario activo/mes asumiendo provider moderado
@@ -927,3 +937,4 @@ R-2 (single source Tailwind config), R-7 (sensores reales mitigan
 | Fecha | Cambio |
 |-------|--------|
 | `2026-05-08` | Draft inicial — consolida issues 001–006 + análisis pre-MP |
+| `2026-05-09` | Copilot review fixes: sensor_readings.unit alineado con métricas (`%/C/F/lux`); `'manual'` añadido a sensor_devices.provider con `apiKeyEncrypted` nullable; nanoid() $defaultFn explícito en todas las tablas; npm en lugar de pnpm (matches actual repo); F0 incluye Playwright como entregable explícito |
