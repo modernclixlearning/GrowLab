@@ -1,6 +1,6 @@
 /**
  * GrowLab - Add Care Log Modal
- * 
+ *
  * Modal form for logging a new care activity (water, feed, prune, etc.)
  * on a specific plant.
  */
@@ -9,6 +9,7 @@ import { useState } from 'react'
 import { X } from 'lucide-react'
 import { useCreateCareLog } from '@/lib/hooks/useCareLogs'
 import { CARE_LOG_TYPE_CONFIG } from '@/types/care-logs'
+import { H3 } from '@/components/shell'
 import type { CareLogType, CreateCareLogRequest } from '@/types/care-logs'
 
 const LOG_TYPES: CareLogType[] = ['water', 'feed', 'prune', 'transplant', 'train', 'other']
@@ -19,6 +20,10 @@ interface AddCareLogModalProps {
   /** Optional pre-selected log type (e.g., from a quick action button) */
   defaultLogType?: CareLogType
 }
+
+const labelClasses = 'mb-1 block text-sm font-medium text-fg-2'
+const inputClasses =
+  'w-full rounded-md border border-line bg-bg-2 px-3 py-2.5 text-sm text-fg placeholder:text-fg-4 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent transition-colors'
 
 export function AddCareLogModal({ plantId, onClose, defaultLogType }: AddCareLogModalProps) {
   const createCareLog = useCreateCareLog(plantId)
@@ -63,14 +68,14 @@ export function AddCareLogModal({ plantId, onClose, defaultLogType }: AddCareLog
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative mx-auto w-full max-w-md rounded-t-2xl bg-white p-6 shadow-xl sm:rounded-2xl">
+      <div className="absolute inset-0 bg-bg/80" onClick={onClose} />
+      <div className="relative mx-auto w-full max-w-md rounded-t-2xl border-t border-line bg-card p-6 shadow-xl animate-gl-modal-in sm:mx-4 sm:rounded-2xl sm:border">
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-gray-900">Log Care Activity</h2>
+          <H3>Log Care Activity</H3>
           <button
             onClick={onClose}
-            className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+            className="rounded-md p-2 text-fg-3 transition-colors hover:bg-card-2 hover:text-fg focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
           >
             <X className="h-5 w-5" />
           </button>
@@ -79,24 +84,26 @@ export function AddCareLogModal({ plantId, onClose, defaultLogType }: AddCareLog
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Log Type Selection */}
           <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700">
+            <label className={labelClasses}>
               Activity Type
             </label>
             <div className="grid grid-cols-3 gap-2">
               {LOG_TYPES.map((type) => {
                 const config = CARE_LOG_TYPE_CONFIG[type]
+                const active = logType === type
                 return (
                   <button
                     key={type}
                     type="button"
                     onClick={() => setLogType(type)}
-                    className={`flex flex-col items-center rounded-lg border-2 px-3 py-3 text-xs font-medium transition-colors ${
-                      logType === type
-                        ? 'border-primary-500 bg-primary-50 text-primary-700'
-                        : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
-                    }`}
+                    className={[
+                      'flex flex-col items-center rounded-md border-2 px-3 py-3 text-xs font-medium transition-colors',
+                      active
+                        ? 'border-accent bg-accent-soft text-accent'
+                        : 'border-line bg-bg-2 text-fg-2 hover:border-line-2 hover:text-fg',
+                    ].join(' ')}
                   >
-                    <span className={`mb-1 text-lg ${logType === type ? '' : config.color}`}>
+                    <span className="mb-1 text-lg">
                       {type === 'water' && '💧'}
                       {type === 'feed' && '🧪'}
                       {type === 'prune' && '✂️'}
@@ -114,8 +121,8 @@ export function AddCareLogModal({ plantId, onClose, defaultLogType }: AddCareLog
           {/* Amount & Unit (optional) */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label htmlFor="amount" className="mb-1 block text-sm font-medium text-gray-700">
-                Amount <span className="text-gray-400">(optional)</span>
+              <label htmlFor="amount" className={labelClasses}>
+                Amount <span className="text-fg-4">(optional)</span>
               </label>
               <input
                 id="amount"
@@ -125,12 +132,12 @@ export function AddCareLogModal({ plantId, onClose, defaultLogType }: AddCareLog
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="e.g., 500"
-                className="input"
+                className={inputClasses}
               />
             </div>
             <div>
-              <label htmlFor="unit" className="mb-1 block text-sm font-medium text-gray-700">
-                Unit <span className="text-gray-400">(optional)</span>
+              <label htmlFor="unit" className={labelClasses}>
+                Unit <span className="text-fg-4">(optional)</span>
               </label>
               <input
                 id="unit"
@@ -138,7 +145,7 @@ export function AddCareLogModal({ plantId, onClose, defaultLogType }: AddCareLog
                 value={unit}
                 onChange={(e) => setUnit(e.target.value)}
                 placeholder="e.g., ml"
-                className="input"
+                className={inputClasses}
                 maxLength={20}
               />
             </div>
@@ -146,8 +153,8 @@ export function AddCareLogModal({ plantId, onClose, defaultLogType }: AddCareLog
 
           {/* Notes */}
           <div>
-            <label htmlFor="notes" className="mb-1 block text-sm font-medium text-gray-700">
-              Notes <span className="text-gray-400">(optional)</span>
+            <label htmlFor="notes" className={labelClasses}>
+              Notes <span className="text-fg-4">(optional)</span>
             </label>
             <textarea
               id="notes"
@@ -155,14 +162,14 @@ export function AddCareLogModal({ plantId, onClose, defaultLogType }: AddCareLog
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Any observations or details..."
               rows={3}
-              className="input resize-none"
+              className={`${inputClasses} resize-none`}
               maxLength={1000}
             />
           </div>
 
           {/* Error */}
           {error && (
-            <p className="text-sm text-red-600">{error}</p>
+            <p className="text-sm text-status-warn">{error}</p>
           )}
 
           {/* Actions */}
@@ -170,14 +177,14 @@ export function AddCareLogModal({ plantId, onClose, defaultLogType }: AddCareLog
             <button
               type="button"
               onClick={onClose}
-              className="btn-secondary flex-1"
+              className="inline-flex flex-1 items-center justify-center rounded-md border border-line bg-card-2 px-4 py-2.5 text-sm font-semibold text-fg transition-colors hover:bg-card focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={createCareLog.isPending}
-              className="btn-primary flex-1"
+              className="inline-flex flex-1 items-center justify-center rounded-md bg-accent px-4 py-2.5 text-sm font-semibold text-bg shadow-accent-glow transition-transform hover:scale-[1.02] focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg disabled:opacity-60 disabled:hover:scale-100"
             >
               {createCareLog.isPending ? 'Logging...' : 'Log Activity'}
             </button>

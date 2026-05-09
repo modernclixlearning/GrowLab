@@ -1,17 +1,18 @@
 /**
  * GrowLab Garden Page
- * 
+ *
  * Main garden view showing all user's plants with search and filtering.
  * Route: /garden
  */
 
 import { useNavigate } from 'react-router-dom'
 import { useState } from 'react'
-import { Leaf, Plus, Search, LogOut, Settings, ArrowLeft } from 'lucide-react'
+import { Leaf, Plus, Search, LogOut } from 'lucide-react'
 import { useAuth } from '@/lib/stores/auth'
 import { usePlants } from '@/lib/hooks/usePlants'
 import { PlantCard } from '@/components/plants/PlantCard'
 import { AddPlantModal } from '@/components/plants/AddPlantModal'
+import { Eyebrow, H1, H2, SystemPulse } from '@/components/shell'
 import type { GrowthStage } from '@/types/plants'
 import { GROWTH_STAGE_CONFIG } from '@/types/plants'
 
@@ -49,10 +50,10 @@ export default function GardenPage() {
 
   if (authLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center bg-bg">
         <div className="text-center">
-          <Leaf className="mx-auto h-12 w-12 animate-pulse text-primary-600" />
-          <p className="mt-4 text-gray-600">Loading...</p>
+          <Leaf className="mx-auto h-12 w-12 animate-pulse text-accent" />
+          <p className="mt-4 text-fg-3">Loading...</p>
         </div>
       </div>
     )
@@ -63,101 +64,101 @@ export default function GardenPage() {
     navigate('/')
   }
 
+  const totalActive = data?.plants.filter((p) => p.growthStage !== 'completed').length ?? 0
+  const totalFlowering = data?.plants.filter((p) => p.growthStage === 'flowering').length ?? 0
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="border-b border-gray-200 bg-white">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4">
+    <div className="min-h-full">
+      <header className="px-5 pt-5 pb-2">
+        <div className="mb-4 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <button
-              onClick={() => navigate('/dashboard')}
-              className="rounded-lg p-2 text-gray-600 hover:bg-gray-100"
-              aria-label="Back to dashboard"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </button>
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-100">
-              <Leaf className="h-5 w-5 text-primary-700" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-md bg-accent-soft text-accent">
+              <Leaf className="h-5 w-5" />
             </div>
-            <span className="text-xl font-bold text-gray-900">My Garden</span>
+            <H1 className="text-[28px]">Garden</H1>
           </div>
 
-          <div className="flex items-center gap-4">
-            <span className="hidden text-sm text-gray-600 sm:block">
+          <div className="flex items-center gap-2">
+            <span
+              className="hidden text-xs text-fg-3 sm:block max-w-[120px] truncate"
+              title={user?.name || user?.email}
+            >
               {user?.name || user?.email}
             </span>
             <button
-              onClick={() => navigate('/settings')}
-              className="rounded-lg p-2 text-gray-600 hover:bg-gray-100"
-              aria-label="Settings"
-            >
-              <Settings className="h-5 w-5" />
-            </button>
-            <button
               onClick={handleLogout}
-              className="rounded-lg p-2 text-gray-600 hover:bg-gray-100"
+              className="rounded-md border border-line bg-card p-2 text-fg-2 transition-colors hover:bg-card-2 hover:text-fg focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
               aria-label="Logout"
             >
               <LogOut className="h-5 w-5" />
             </button>
           </div>
         </div>
+
+        <SystemPulse
+          count={totalActive}
+          label={`Active Plants · ${totalFlowering} Flowering`}
+        />
       </header>
 
-      <main className="mx-auto max-w-7xl px-4 py-6">
+      <main className="px-5 pt-3">
         {/* Search and Filters */}
-        <div className="mb-6 space-y-4">
+        <div className="mb-5 space-y-4">
           {/* Search Bar */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-fg-3" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="input pl-10"
+              className="w-full rounded-md border border-line bg-card pl-10 pr-4 py-2.5 text-sm text-fg placeholder:text-fg-4 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
               placeholder="Search your plants..."
             />
           </div>
 
           {/* Stage Filter Pills */}
-          <div className="flex gap-2 overflow-x-auto pb-1">
-            {STAGE_FILTERS.map((filter) => (
-              <button
-                key={filter.value}
-                onClick={() => setStageFilter(filter.value)}
-                className={`whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
-                  stageFilter === filter.value
-                    ? 'bg-primary-700 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                {filter.label}
-              </button>
-            ))}
+          <div className="flex gap-2 overflow-x-auto pb-1 -mx-5 px-5">
+            {STAGE_FILTERS.map((filter) => {
+              const active = stageFilter === filter.value
+              return (
+                <button
+                  key={filter.value}
+                  onClick={() => setStageFilter(filter.value)}
+                  className={[
+                    'whitespace-nowrap rounded-full border px-4 py-1.5 text-xs font-medium uppercase tracking-eyebrow font-mono transition-colors',
+                    active
+                      ? 'border-accent bg-accent-soft text-accent'
+                      : 'border-line bg-card text-fg-3 hover:bg-card-2 hover:text-fg-2',
+                  ].join(' ')}
+                >
+                  {filter.label}
+                </button>
+              )
+            })}
           </div>
         </div>
 
         {/* Content */}
         {isLoading ? (
           <div className="py-12 text-center">
-            <Leaf className="mx-auto h-10 w-10 animate-pulse text-primary-400" />
-            <p className="mt-3 text-gray-500">Loading plants...</p>
+            <Leaf className="mx-auto h-10 w-10 animate-pulse text-accent" />
+            <p className="mt-3 text-fg-3">Loading plants...</p>
           </div>
         ) : error ? (
-          <div className="card py-12 text-center">
-            <p className="text-red-600">Failed to load plants. Please try again.</p>
+          <div className="rounded-md border border-status-warn/40 bg-card p-6 py-12 text-center">
+            <p className="text-status-warn">Failed to load plants. Please try again.</p>
           </div>
         ) : data && data.plants.length > 0 ? (
           <>
             {/* Plant Count */}
-            <p className="mb-4 text-sm text-gray-500">
+            <Eyebrow tone="muted" className="mb-3 block">
               {data.total} plant{data.total !== 1 ? 's' : ''}
-              {stageFilter !== 'all' ? ` in ${GROWTH_STAGE_CONFIG[stageFilter].label}` : ''}
-              {search ? ` matching "${search}"` : ''}
-            </p>
+              {stageFilter !== 'all' ? ` · ${GROWTH_STAGE_CONFIG[stageFilter].label}` : ''}
+              {search ? ` · "${search}"` : ''}
+            </Eyebrow>
 
             {/* Plant List */}
-            <div className="space-y-3">
+            <div className="space-y-3 pb-4">
               {data.plants.map((plant) => (
                 <PlantCard
                   key={plant.id}
@@ -169,14 +170,17 @@ export default function GardenPage() {
           </>
         ) : (
           /* Empty State */
-          <div className="card py-12 text-center">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary-100">
-              <Leaf className="h-8 w-8 text-primary-600" />
+          <div className="rounded-lg border border-line bg-card p-8 py-12 text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-accent-soft">
+              <Leaf className="h-8 w-8 text-accent" />
             </div>
-            <h2 className="mb-2 text-xl font-semibold text-gray-900">
+            <Eyebrow tone="accent" className="mb-2 block">
+              Empty Garden
+            </Eyebrow>
+            <H2 className="mb-2">
               {search || stageFilter !== 'all' ? 'No plants found' : 'Your garden is empty'}
-            </h2>
-            <p className="mb-6 text-gray-600">
+            </H2>
+            <p className="mb-6 text-sm text-fg-3">
               {search || stageFilter !== 'all'
                 ? 'Try adjusting your filters or search term'
                 : 'Start your growing journey by adding your first plant'}
@@ -184,7 +188,7 @@ export default function GardenPage() {
             {!search && stageFilter === 'all' && (
               <button
                 onClick={() => setShowAddModal(true)}
-                className="btn-primary"
+                className="inline-flex items-center justify-center rounded-md bg-accent px-4 py-2.5 text-sm font-semibold text-bg shadow-accent-glow transition-transform hover:scale-[1.02] focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
               >
                 <Plus className="mr-2 h-4 w-4" />
                 Add Your First Plant
@@ -193,15 +197,6 @@ export default function GardenPage() {
           </div>
         )}
       </main>
-
-      {/* Floating Action Button */}
-      <button
-        onClick={() => setShowAddModal(true)}
-        className="fixed bottom-6 right-6 flex h-14 w-14 items-center justify-center rounded-full bg-primary-700 text-white shadow-lg transition-transform hover:scale-105 hover:bg-primary-800 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
-        aria-label="Add plant"
-      >
-        <Plus className="h-6 w-6" />
-      </button>
 
       {/* Add Plant Modal */}
       <AddPlantModal

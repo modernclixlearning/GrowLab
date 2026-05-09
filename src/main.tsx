@@ -23,7 +23,16 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         <BrowserRouter>
           <App />
         </BrowserRouter>
-        <Toaster richColors closeButton />
+        <Toaster
+          theme="dark"
+          position="top-center"
+          richColors={false}
+          closeButton
+          toastOptions={{
+            className:
+              'gl-toast bg-card border border-line text-fg font-body rounded-lg shadow-lg',
+          }}
+        />
       </AuthProvider>
     </QueryClientProvider>
   </React.StrictMode>

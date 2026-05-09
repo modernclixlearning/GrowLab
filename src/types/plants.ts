@@ -93,44 +93,44 @@ export const GROWTH_STAGE_CONFIG: Record<GrowthStage, {
 }> = {
   seedling: {
     label: 'Seedling',
-    color: 'text-lime-700',
-    bgColor: 'bg-lime-100',
+    color: 'text-stage-seedling',
+    bgColor: 'bg-stage-seedling/15',
     description: 'First leaves & early growth',
   },
   vegetative: {
     label: 'Vegetative',
-    color: 'text-green-700',
-    bgColor: 'bg-green-100',
+    color: 'text-stage-veg',
+    bgColor: 'bg-stage-veg/15',
     description: 'Leafy growth & stem development',
   },
   flowering: {
     label: 'Flowering',
-    color: 'text-purple-700',
-    bgColor: 'bg-purple-100',
+    color: 'text-stage-flower',
+    bgColor: 'bg-stage-flower/15',
     description: 'Bud formation & ripening',
   },
   harvesting: {
     label: 'Harvesting',
-    color: 'text-amber-700',
-    bgColor: 'bg-amber-100',
+    color: 'text-status-alert',
+    bgColor: 'bg-status-alert/15',
     description: 'Ready for harvest',
   },
   drying: {
     label: 'Drying',
-    color: 'text-orange-700',
-    bgColor: 'bg-orange-100',
+    color: 'text-status-alert',
+    bgColor: 'bg-status-alert/15',
     description: 'Drying after harvest',
   },
   curing: {
     label: 'Curing',
-    color: 'text-yellow-700',
-    bgColor: 'bg-yellow-100',
+    color: 'text-status-thirsty',
+    bgColor: 'bg-status-thirsty/15',
     description: 'Curing for quality',
   },
   completed: {
     label: 'Completed',
-    color: 'text-gray-700',
-    bgColor: 'bg-gray-100',
+    color: 'text-fg-3',
+    bgColor: 'bg-card-2',
     description: 'Lifecycle complete',
   },
 }
@@ -143,11 +143,11 @@ export const HEALTH_STATUS_CONFIG: Record<HealthStatus, {
   color: string
   bgColor: string
 }> = {
-  healthy: { label: 'Healthy', color: 'text-green-700', bgColor: 'bg-green-100' },
-  stressed: { label: 'Stressed', color: 'text-yellow-700', bgColor: 'bg-yellow-100' },
-  sick: { label: 'Sick', color: 'text-red-700', bgColor: 'bg-red-100' },
-  recovering: { label: 'Recovering', color: 'text-blue-700', bgColor: 'bg-blue-100' },
-  dead: { label: 'Dead', color: 'text-gray-700', bgColor: 'bg-gray-200' },
+  healthy: { label: 'Healthy', color: 'text-status-good', bgColor: 'bg-status-good/15' },
+  stressed: { label: 'Stressed', color: 'text-status-thirsty', bgColor: 'bg-status-thirsty/15' },
+  sick: { label: 'Sick', color: 'text-status-warn', bgColor: 'bg-status-warn/15' },
+  recovering: { label: 'Recovering', color: 'text-status-water', bgColor: 'bg-status-water/15' },
+  dead: { label: 'Dead', color: 'text-fg-3', bgColor: 'bg-card-2' },
 }
 
 /**

@@ -3,39 +3,35 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
-    --color-primary: 26 77 46;
-    --color-secondary: 45 95 58;
-    --color-accent: 61 114 69;
+  html,
+  body {
+    height: 100%;
   }
 
   body {
-    @apply bg-gray-50 text-gray-900 antialiased;
+    @apply bg-bg text-fg font-body antialiased;
   }
 }
 
-@layer components {
-  .btn {
-    @apply inline-flex items-center justify-center rounded-lg px-4 py-2 font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
-  }
+/* ============================================================
+   Sonner toaster — token-driven theme overrides.
+   We disable Sonner's `richColors` and instead drive the look
+   from our theme tokens (card / line / fg / accent-glow). This
+   keeps toast styling consistent with the rest of the chrome.
+   ============================================================ */
+[data-sonner-toaster] {
+  --normal-bg: theme('colors.card.DEFAULT');
+  --normal-border: theme('colors.line.DEFAULT');
+  --normal-text: theme('colors.fg.DEFAULT');
+  --success-bg: theme('colors.card.DEFAULT');
+  --success-border: theme('colors.accent.DEFAULT');
+  --success-text: theme('colors.fg.DEFAULT');
+  --error-bg: theme('colors.card.DEFAULT');
+  --error-border: theme('colors.status.warn');
+  --error-text: theme('colors.fg.DEFAULT');
+  font-family: theme('fontFamily.body');
+}
 
-  .btn-primary {
-    @apply btn bg-primary-700 text-white hover:bg-primary-800 focus:ring-primary-500;
-  }
-
-  .btn-secondary {
-    @apply btn bg-gray-200 text-gray-900 hover:bg-gray-300 focus:ring-gray-500;
-  }
-
-  .input {
-    @apply block w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-900 placeholder-gray-500 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500;
-  }
-
-  .input-error {
-    @apply input border-red-500 focus:border-red-500 focus:ring-red-500;
-  }
-
-  .card {
-    @apply rounded-xl bg-white p-6 shadow-sm border border-gray-100;
-  }
+[data-sonner-toast][data-type='success'] {
+  box-shadow: theme('boxShadow.accent-glow');
 }

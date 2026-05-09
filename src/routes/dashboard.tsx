@@ -1,15 +1,16 @@
 /**
  * GrowLab Dashboard Page
- * 
+ *
  * Main authenticated dashboard view with real plant data.
  */
 
 import { useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
-import { Leaf, LogOut, Settings, Plus, Sprout, TreePine } from 'lucide-react'
+import { Leaf, LogOut, Plus, Sprout, TreePine } from 'lucide-react'
 import { useAuth } from '@/lib/stores/auth'
 import { usePlants } from '@/lib/hooks/usePlants'
 import { AddPlantModal } from '@/components/plants/AddPlantModal'
+import { Eyebrow, H1, H2 } from '@/components/shell'
 
 export default function DashboardPage() {
   const navigate = useNavigate()
@@ -28,10 +29,10 @@ export default function DashboardPage() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center bg-bg">
         <div className="text-center">
-          <Leaf className="mx-auto h-12 w-12 animate-pulse text-primary-600" />
-          <p className="mt-4 text-gray-600">Loading...</p>
+          <Leaf className="mx-auto h-12 w-12 animate-pulse text-accent" />
+          <p className="mt-4 text-fg-3">Loading...</p>
         </div>
       </div>
     )
@@ -54,110 +55,105 @@ export default function DashboardPage() {
   ).length ?? 0
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-full">
       {/* Header */}
-      <header className="border-b border-gray-200 bg-white">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-100">
-              <Leaf className="h-5 w-5 text-primary-700" />
+      <header className="px-5 pt-5 pb-2">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="flex h-10 w-10 items-center justify-center rounded-md bg-accent-soft text-accent">
+              <Leaf className="h-5 w-5" />
             </div>
-            <span className="text-xl font-bold text-gray-900">GrowLab</span>
+            <div className="min-w-0">
+              <Eyebrow tone="muted">GrowLab</Eyebrow>
+              <p className="truncate text-sm text-fg-2">
+                {user?.name || user?.email}
+              </p>
+            </div>
           </div>
 
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-600">
-              {user?.name || user?.email}
-            </span>
-            <button
-              onClick={() => navigate('/garden')}
-              className="rounded-lg p-2 text-gray-600 hover:bg-gray-100"
-              aria-label="Settings"
-            >
-              <Settings className="h-5 w-5" />
-            </button>
-            <button
-              onClick={handleLogout}
-              className="rounded-lg p-2 text-gray-600 hover:bg-gray-100"
-              aria-label="Logout"
-            >
-              <LogOut className="h-5 w-5" />
-            </button>
-          </div>
+          <button
+            onClick={handleLogout}
+            className="rounded-md border border-line bg-card p-2 text-fg-2 transition-colors hover:bg-card-2 hover:text-fg focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+            aria-label="Logout"
+          >
+            <LogOut className="h-5 w-5" />
+          </button>
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="mx-auto max-w-7xl px-4 py-8">
+      <main className="px-5 py-4">
         {/* Welcome Section */}
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold text-gray-900">
-            Welcome back, {user?.name?.split(' ')[0] || 'Grower'}!
-          </h1>
-          <p className="mt-1 text-gray-600">
+        <div className="mb-6">
+          <Eyebrow tone="accent" className="mb-1 block">
+            Today
+          </Eyebrow>
+          <H1 className="text-[28px]">
+            Welcome back, {user?.name?.split(' ')[0] || 'Grower'}
+          </H1>
+          <p className="mt-1 text-sm text-fg-3">
             Here's an overview of your garden
           </p>
         </div>
 
         {/* Stats Grid */}
-        <div className="mb-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mb-6 grid grid-cols-2 gap-3">
           <button
             onClick={() => navigate('/garden')}
-            className="text-left"
+            className="text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg rounded-lg"
           >
             <StatCard
               title="Active Plants"
               value={String(activePlants)}
               icon={<Leaf className="h-6 w-6" />}
-              color="primary"
+              tone="accent"
             />
           </button>
           <StatCard
             title="Total Plants"
             value={String(totalPlants)}
             icon={<TreePine className="h-6 w-6" />}
-            color="accent"
+            tone="veg"
           />
           <StatCard
             title="Seedlings"
             value={String(seedlings)}
             icon={<Sprout className="h-6 w-6" />}
-            color="secondary"
+            tone="seedling"
           />
           <StatCard
             title="Flowering"
             value={String(flowering)}
             icon={<Leaf className="h-6 w-6" />}
-            color="gray"
+            tone="flower"
           />
         </div>
 
         {/* Content */}
         {totalPlants > 0 ? (
-          <div className="card">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-900">Your Garden</h2>
+          <div className="rounded-lg border border-line bg-card p-5">
+            <div className="mb-3 flex items-center justify-between">
+              <H2 className="text-[18px]">Your Garden</H2>
               <button
                 onClick={() => navigate('/garden')}
-                className="text-sm font-medium text-primary-700 hover:text-primary-800"
+                className="font-mono text-[11px] uppercase tracking-eyebrow text-accent hover:text-fg transition-colors"
               >
                 View All
               </button>
             </div>
-            <p className="text-gray-600 mb-4">
+            <p className="mb-4 text-sm text-fg-3">
               You have {activePlants} active plant{activePlants !== 1 ? 's' : ''} growing.
             </p>
             <div className="flex gap-3">
               <button
                 onClick={() => navigate('/garden')}
-                className="btn-primary"
+                className="inline-flex flex-1 items-center justify-center rounded-md bg-accent px-4 py-2.5 text-sm font-semibold text-bg shadow-accent-glow transition-transform hover:scale-[1.02] focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
               >
                 <Leaf className="mr-2 h-4 w-4" />
                 View Garden
               </button>
               <button
                 onClick={() => setShowAddModal(true)}
-                className="btn-secondary"
+                className="inline-flex flex-1 items-center justify-center rounded-md border border-line bg-card-2 px-4 py-2.5 text-sm font-semibold text-fg transition-colors hover:bg-card focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
               >
                 <Plus className="mr-2 h-4 w-4" />
                 Add Plant
@@ -166,19 +162,20 @@ export default function DashboardPage() {
           </div>
         ) : (
           /* Empty State */
-          <div className="card text-center">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary-100">
-              <Leaf className="h-8 w-8 text-primary-600" />
+          <div className="rounded-lg border border-line bg-card p-8 text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-accent-soft">
+              <Leaf className="h-8 w-8 text-accent" />
             </div>
-            <h2 className="mb-2 text-xl font-semibold text-gray-900">
-              No plants yet
-            </h2>
-            <p className="mb-6 text-gray-600">
+            <Eyebrow tone="accent" className="mb-2 block">
+              First Plant
+            </Eyebrow>
+            <H2 className="mb-2">No plants yet</H2>
+            <p className="mb-6 text-sm text-fg-3">
               Start your garden by adding your first plant
             </p>
             <button
               onClick={() => setShowAddModal(true)}
-              className="btn-primary"
+              className="inline-flex items-center justify-center rounded-md bg-accent px-4 py-2.5 text-sm font-semibold text-bg shadow-accent-glow transition-transform hover:scale-[1.02] focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
             >
               <Plus className="mr-2 h-4 w-4" />
               Add Your First Plant
@@ -200,26 +197,26 @@ interface StatCardProps {
   title: string
   value: string
   icon: React.ReactNode
-  color: 'primary' | 'secondary' | 'accent' | 'gray'
+  tone: 'accent' | 'veg' | 'seedling' | 'flower'
 }
 
-function StatCard({ title, value, icon, color }: StatCardProps) {
-  const colorClasses = {
-    primary: 'bg-primary-100 text-primary-700',
-    secondary: 'bg-green-100 text-green-700',
-    accent: 'bg-emerald-100 text-emerald-700',
-    gray: 'bg-gray-100 text-gray-700',
+function StatCard({ title, value, icon, tone }: StatCardProps) {
+  const toneClasses: Record<StatCardProps['tone'], string> = {
+    accent: 'bg-accent-soft text-accent',
+    veg: 'bg-stage-veg/15 text-stage-veg',
+    seedling: 'bg-stage-seedling/15 text-stage-seedling',
+    flower: 'bg-stage-flower/15 text-stage-flower',
   }
 
   return (
-    <div className="card">
-      <div className="flex items-center gap-4">
-        <div className={`rounded-lg p-3 ${colorClasses[color]}`}>
+    <div className="rounded-lg border border-line bg-card p-4">
+      <div className="flex items-center gap-3">
+        <div className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-md ${toneClasses[tone]}`}>
           {icon}
         </div>
-        <div>
-          <p className="text-sm text-gray-600">{title}</p>
-          <p className="text-2xl font-bold text-gray-900">{value}</p>
+        <div className="min-w-0">
+          <Eyebrow tone="muted">{title}</Eyebrow>
+          <p className="font-display text-2xl font-bold text-fg">{value}</p>
         </div>
       </div>
     </div>
