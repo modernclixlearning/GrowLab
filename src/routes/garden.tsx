@@ -3,36 +3,83 @@
  *
  * Main garden view showing all user's plants with search and filtering.
  * Route: /garden
+ *
+ * F1 wiring (Master Plan §3 F1):
+ *   - `<SystemPulse>` count derives from `derivePlantStats` (real numbers).
+ *   - `<StagePills>` renders the 7-stage Expert filter (Basic/Expert toggle is F2).
+ *   - Search filters by `name` (Plant has no `strain` field — `strainType`
+ *     is enum-only, so we additionally match the human strain label from
+ *     STRAIN_TYPE_CONFIG to honor "search by name and strain").
+ *   - Per-plant `careTag` is derived in the parent and passed to `<PlantCard>`.
  */
 
 import { useNavigate } from 'react-router-dom'
-import { useState } from 'react'
-import { Leaf, Plus, Search, LogOut } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { Leaf, Search, LogOut } from 'lucide-react'
 import { useAuth } from '@/lib/stores/auth'
 import { usePlants } from '@/lib/hooks/usePlants'
+import { useCareLogs } from '@/lib/hooks/useCareLogs'
 import { PlantCard } from '@/components/plants/PlantCard'
+import { StagePills, type StageFilter } from '@/components/plants/StagePills'
 import { AddPlantModal } from '@/components/plants/AddPlantModal'
 import { Eyebrow, H1, H2, SystemPulse } from '@/components/shell'
-import type { GrowthStage } from '@/types/plants'
-import { GROWTH_STAGE_CONFIG } from '@/types/plants'
+import { derivePlantStats } from '@/lib/plantStats'
+import { deriveCareTag, type CareTag } from '@/lib/careTag'
+import type { Plant } from '@/types/plants'
+import { STRAIN_TYPE_CONFIG, GROWTH_STAGE_CONFIG } from '@/types/plants'
 
-/** Filter options for growth stage */
-const STAGE_FILTERS: { value: GrowthStage | 'all'; label: string }[] = [
-  { value: 'all', label: 'All' },
-  { value: 'seedling', label: 'Seedling' },
-  { value: 'vegetative', label: 'Veg' },
-  { value: 'flowering', label: 'Flower' },
-  { value: 'harvesting', label: 'Harvest' },
-  { value: 'drying', label: 'Drying' },
-  { value: 'curing', label: 'Curing' },
-  { value: 'completed', label: 'Done' },
-]
+/**
+ * Filter the plant list by search query (name + human strain label) and
+ * stage. Pure helper — exposed for unit testing later if needed.
+ */
+function filterPlants(
+  plants: Plant[],
+  search: string,
+  stageFilter: StageFilter,
+): Plant[] {
+  const q = search.trim().toLowerCase()
+  return plants.filter((p) => {
+    if (stageFilter !== 'all' && p.growthStage !== stageFilter) return false
+    if (!q) return true
+    const strainLabel = STRAIN_TYPE_CONFIG[p.strainType]?.label ?? p.strainType
+    return (
+      p.name.toLowerCase().includes(q) ||
+      strainLabel.toLowerCase().includes(q) ||
+      p.strainType.toLowerCase().includes(q)
+    )
+  })
+}
+
+/**
+ * Inner row that renders a `<PlantCard>` and pulls the plant's care logs
+ * to derive the careTag. Care logs are scoped per-plant in the API, so
+ * each card needs its own query — React Query dedupes.
+ */
+function PlantCardWithCareTag({
+  plant,
+  onClick,
+}: {
+  plant: Plant
+  onClick: () => void
+}) {
+  const { data: careLogsData } = useCareLogs(plant.id, {
+    sortOrder: 'desc',
+    limit: 20,
+  })
+
+  const careTag: CareTag | undefined = useMemo(() => {
+    if (!careLogsData) return undefined
+    return deriveCareTag(careLogsData.careLogs)
+  }, [careLogsData])
+
+  return <PlantCard plant={plant} onClick={onClick} careTag={careTag} />
+}
 
 export default function GardenPage() {
   const navigate = useNavigate()
   const { user, isAuthenticated, isLoading: authLoading, logout } = useAuth()
   const [search, setSearch] = useState('')
-  const [stageFilter, setStageFilter] = useState<GrowthStage | 'all'>('all')
+  const [stageFilter, setStageFilter] = useState<StageFilter>('all')
   const [showAddModal, setShowAddModal] = useState(false)
 
   // Redirect to login if not authenticated
@@ -41,12 +88,30 @@ export default function GardenPage() {
     return null
   }
 
+  // Fetch the full plant list once and apply filters client-side so the
+  // SystemPulse counts always reflect the unfiltered totals while the
+  // visible list responds to filters. Backend filtering would force two
+  // queries per render — overkill for the typical < 100-plant garden.
   const { data, isLoading, error } = usePlants({
-    search: search || undefined,
-    stage: stageFilter === 'all' ? undefined : stageFilter,
     sortBy: 'updatedAt',
     sortOrder: 'desc',
+    limit: 100,
   })
+
+  const allPlants = data?.plants ?? []
+  const stats = useMemo(() => derivePlantStats(allPlants), [allPlants])
+  const stageCounts = useMemo(() => {
+    const counts: Partial<Record<StageFilter, number>> = { all: allPlants.length }
+    for (const p of allPlants) {
+      counts[p.growthStage] = (counts[p.growthStage] ?? 0) + 1
+    }
+    return counts
+  }, [allPlants])
+
+  const filtered = useMemo(
+    () => filterPlants(allPlants, search, stageFilter),
+    [allPlants, search, stageFilter],
+  )
 
   if (authLoading) {
     return (
@@ -63,9 +128,6 @@ export default function GardenPage() {
     await logout()
     navigate('/')
   }
-
-  const totalActive = data?.plants.filter((p) => p.growthStage !== 'completed').length ?? 0
-  const totalFlowering = data?.plants.filter((p) => p.growthStage === 'flowering').length ?? 0
 
   return (
     <div className="min-h-full">
@@ -96,47 +158,32 @@ export default function GardenPage() {
         </div>
 
         <SystemPulse
-          count={totalActive}
-          label={`Active Plants · ${totalFlowering} Flowering`}
+          count={stats.active}
+          label={`Active Plants · ${stats.flowering} Flowering`}
         />
       </header>
 
       <main className="px-5 pt-3">
-        {/* Search and Filters */}
-        <div className="mb-5 space-y-4">
-          {/* Search Bar */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-fg-3" />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full rounded-md border border-line bg-card pl-10 pr-4 py-2.5 text-sm text-fg placeholder:text-fg-4 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
-              placeholder="Search your plants..."
-            />
-          </div>
-
-          {/* Stage Filter Pills */}
-          <div className="flex gap-2 overflow-x-auto pb-1 -mx-5 px-5">
-            {STAGE_FILTERS.map((filter) => {
-              const active = stageFilter === filter.value
-              return (
-                <button
-                  key={filter.value}
-                  onClick={() => setStageFilter(filter.value)}
-                  className={[
-                    'whitespace-nowrap rounded-full border px-4 py-1.5 text-xs font-medium uppercase tracking-eyebrow font-mono transition-colors',
-                    active
-                      ? 'border-accent bg-accent-soft text-accent'
-                      : 'border-line bg-card text-fg-3 hover:bg-card-2 hover:text-fg-2',
-                  ].join(' ')}
-                >
-                  {filter.label}
-                </button>
-              )
-            })}
-          </div>
+        {/* Search */}
+        <div className="mb-4 relative">
+          <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-fg-3" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full rounded-md border border-line bg-card pl-10 pr-4 py-2.5 text-sm text-fg placeholder:text-fg-4 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+            placeholder="Search your plants..."
+            aria-label="Search plants"
+          />
         </div>
+
+        {/* Stage filter pills (F1: full 7-stage Expert set; toggle in F2) */}
+        <StagePills
+          selected={stageFilter}
+          onChange={setStageFilter}
+          counts={stageCounts}
+          className="mb-5 -mx-5 px-5"
+        />
 
         {/* Content */}
         {isLoading ? (
@@ -148,19 +195,19 @@ export default function GardenPage() {
           <div className="rounded-md border border-status-warn/40 bg-card p-6 py-12 text-center">
             <p className="text-status-warn">Failed to load plants. Please try again.</p>
           </div>
-        ) : data && data.plants.length > 0 ? (
+        ) : filtered.length > 0 ? (
           <>
             {/* Plant Count */}
             <Eyebrow tone="muted" className="mb-3 block">
-              {data.total} plant{data.total !== 1 ? 's' : ''}
+              {filtered.length} plant{filtered.length !== 1 ? 's' : ''}
               {stageFilter !== 'all' ? ` · ${GROWTH_STAGE_CONFIG[stageFilter].label}` : ''}
               {search ? ` · "${search}"` : ''}
             </Eyebrow>
 
             {/* Plant List */}
             <div className="space-y-3 pb-4">
-              {data.plants.map((plant) => (
-                <PlantCard
+              {filtered.map((plant) => (
+                <PlantCardWithCareTag
                   key={plant.id}
                   plant={plant}
                   onClick={() => navigate(`/plants/${plant.id}`)}
@@ -185,15 +232,6 @@ export default function GardenPage() {
                 ? 'Try adjusting your filters or search term'
                 : 'Start your growing journey by adding your first plant'}
             </p>
-            {!search && stageFilter === 'all' && (
-              <button
-                onClick={() => setShowAddModal(true)}
-                className="inline-flex items-center justify-center rounded-md bg-accent px-4 py-2.5 text-sm font-semibold text-bg shadow-accent-glow transition-transform hover:scale-[1.02] focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Add Your First Plant
-              </button>
-            )}
           </div>
         )}
       </main>
@@ -206,3 +244,6 @@ export default function GardenPage() {
     </div>
   )
 }
+
+// Exported for tests — pure filter helper for the search + stage pipeline.
+export { filterPlants }
