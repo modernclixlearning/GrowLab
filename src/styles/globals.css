@@ -2,22 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ============================================================
-   Residual CSS variables for the dev-only Tweaks Panel "refined"
-   preset. The Tailwind config in tailwind.config.ts is the single
-   source of truth for theme tokens; these vars only exist to allow
-   runtime override of the accent color in development.
-   ============================================================ */
-:root {
-  --accent: #22e26a;
-  --accent-glow: 0 0 24px rgba(34, 226, 106, 0.45);
-}
-
-[data-accent='refined'] {
-  --accent: #7fd1a1;
-  --accent-glow: 0 0 0 rgba(0, 0, 0, 0);
-}
-
 @layer base {
   html,
   body {

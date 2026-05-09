@@ -5,8 +5,9 @@
  *   [Garden] [Dashboard] [FAB Add] [Schedule] [Profile]
  *
  * Tabs whose route is not yet implemented in the app (Schedule /schedule
- * and Profile /profile) are rendered visually identical to the other
- * tabs but their click handler is a no-op (no navigation, no toast).
+ * and Profile /profile) are rendered with the native `disabled` attribute
+ * and reduced opacity so the visual state matches what assistive tech
+ * announces (no aria-disabled vs operable mismatch).
  *
  * The FAB is rendered via the standalone `Fab` component and behaves
  * as a no-op in F0 — callers can pass `onFabClick` to wire a custom
@@ -104,15 +105,18 @@ function NavButton({ item, isActive, onClick }: NavButtonProps) {
     <button
       type="button"
       onClick={onClick}
+      disabled={isStub}
       aria-label={label}
       aria-current={isActive ? 'page' : undefined}
-      aria-disabled={isStub || undefined}
       className={[
         'flex flex-1 flex-col items-center justify-center gap-1 border-0 bg-transparent pt-1 text-[11px] font-medium transition-colors',
         isActive ? 'text-accent' : 'text-fg-3',
-        // visually identical for stubs; only the click is a no-op
+        // disabled stubs: dim them so the visual state matches the a11y state
+        isStub ? 'opacity-50 cursor-not-allowed' : '',
         'focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg rounded-md',
-      ].join(' ')}
+      ]
+        .filter(Boolean)
+        .join(' ')}
     >
       <Icon className="h-5 w-5" strokeWidth={2} />
       <span>{label}</span>

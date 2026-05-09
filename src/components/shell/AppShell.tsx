@@ -9,9 +9,15 @@
  *
  * Auth screens (login/register) bypass AppShell to remain full-bleed.
  *
- * Notes:
- * - Children render inside the scrollable area; the BottomNav is rendered
- *   at the bottom and overlaps via gradient (matches prototype).
+ * Layout:
+ * - The shell pins itself to the dynamic viewport height (`h-dvh`) so the
+ *   BottomNav stays anchored to the bottom on long content (e.g. Garden
+ *   list). Internal scrolling happens inside the content area, never on
+ *   the page itself — this prevents the absolutely-positioned BottomNav
+ *   from being pushed off-screen.
+ * - Children render inside the scrollable area; the BottomNav remains
+ *   absolutely positioned to preserve the gradient overlap from the
+ *   prototype.
  * - The shell sets the dark page background (`bg-bg`) and default text
  *   color (`text-fg`) so consumers do not need to repeat them.
  * - `header` prop is optional — pass JSX to render a top chrome bar above
@@ -38,17 +44,19 @@ export function AppShell({
   onFabClick,
 }: AppShellProps) {
   return (
-    <div className="relative min-h-screen w-full bg-bg font-body text-fg antialiased">
+    <div className="relative h-dvh w-full bg-bg font-body text-fg antialiased">
       {/* Outer centering for desktop / large screens, mobile-first inside */}
-      <div className="relative mx-auto min-h-screen w-full max-w-[412px] overflow-hidden bg-bg">
-        {header ? <div className="relative z-20">{header}</div> : null}
+      <div className="relative mx-auto flex h-dvh w-full max-w-[412px] flex-col overflow-hidden bg-bg">
+        {header ? <div className="relative z-20 flex-shrink-0">{header}</div> : null}
 
         <div
           className={[
-            'relative w-full overflow-y-auto overflow-x-hidden',
+            'relative w-full flex-1 overflow-y-auto overflow-x-hidden',
             // leave space for the 92px bottom nav unless hidden
-            hideBottomNav ? 'min-h-screen' : 'min-h-[calc(100vh-92px)] pb-[92px]',
-          ].join(' ')}
+            hideBottomNav ? '' : 'pb-[92px]',
+          ]
+            .filter(Boolean)
+            .join(' ')}
         >
           {children}
         </div>
