@@ -195,23 +195,35 @@ export async function mockGrowlabApi(page: Page, opts: MockOptions = {}) {
   const accessToken = 'test-access-token'
 
   // Pin clock so relative dates ("3h ago") are deterministic.
+  //
+  // We wrap `Date` with a Proxy instead of subclassing it so that BOTH
+  // `new Date()` and `Date()` (no `new`) keep working. A class-based
+  // override would throw "class constructor cannot be invoked without
+  // 'new'" the moment any dependency calls `Date()` as a function.
   await page.addInitScript((nowIso: string) => {
     const fixed = new Date(nowIso).getTime()
     const RealDate = Date
-    class FrozenDate extends RealDate {
-      constructor(...args: unknown[]) {
-        if (args.length === 0) {
-          super(fixed)
-        } else {
-          // @ts-expect-error spread args into Date
-          super(...args)
-        }
-      }
-      static now() {
-        return fixed
-      }
-    }
-    // @ts-expect-error replace global Date
+
+    const FrozenDate = new Proxy(RealDate, {
+      construct(_target, args) {
+        if (args.length === 0) return new RealDate(fixed)
+        // Forward all other constructor signatures to the real Date.
+        return new RealDate(
+          ...(args as ConstructorParameters<typeof Date>),
+        )
+      },
+      apply() {
+        // `Date()` (without `new`) returns a string per spec; mimic that
+        // using the frozen instant so relative-time strings stay stable.
+        return new RealDate(fixed).toString()
+      },
+      get(target, prop, receiver) {
+        if (prop === 'now') return () => fixed
+        return Reflect.get(target, prop, receiver)
+      },
+    })
+
+    // @ts-expect-error replace global Date with the proxy
     globalThis.Date = FrozenDate
   }, FIXED_NOW)
 

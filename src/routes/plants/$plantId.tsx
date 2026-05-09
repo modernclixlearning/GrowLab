@@ -81,9 +81,15 @@ export default function PlantDetailPage() {
   const { plantId } = useParams<{ plantId: string }>()
   const { isAuthenticated, isLoading: authLoading } = useAuth()
   const { data: plant, isLoading, error } = usePlant(plantId ?? '')
+  // Narrow the careTag query to the single most recent water log — that's
+  // all `deriveCareTag` actually needs. The full timeline is fetched
+  // separately by `<CareLogList>` (different query key, different params),
+  // and trimming this payload avoids shipping ~20 unrelated logs per
+  // page render just to derive a "watered Xh ago" pill.
   const { data: careLogsData } = useCareLogs(plantId ?? '', {
+    logType: 'water',
     sortOrder: 'desc',
-    limit: 20,
+    limit: 1,
   })
   const updatePlant = useUpdatePlant()
   const deletePlant = useDeletePlant()

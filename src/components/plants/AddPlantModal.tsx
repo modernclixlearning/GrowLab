@@ -282,6 +282,13 @@ function Step1Photo({
   form: FormState
   update: <K extends keyof FormState>(key: K, value: FormState[K]) => void
 }) {
+  // Track which URL (if any) failed to load so we can fall back to the
+  // placeholder copy. Comparing against `form.photoUrl` instead of using a
+  // boolean automatically "resets" the failure state when the user types a
+  // new URL — no useEffect needed, no stale DOM mutation.
+  const [erroredUrl, setErroredUrl] = useState<string | null>(null)
+  const showImage = !!form.photoUrl && erroredUrl !== form.photoUrl
+
   return (
     <div className="space-y-5">
       <p className="text-sm text-fg-2">
@@ -292,26 +299,26 @@ function Step1Photo({
       {/* Upload zone preview */}
       <div className="flex flex-col items-center gap-4 rounded-lg border-2 border-dashed border-line-2 bg-bg-1 px-5 py-8 text-center">
         <div className="flex h-16 w-16 items-center justify-center rounded-full bg-accent-soft text-accent">
-          {form.photoUrl ? (
+          {showImage ? (
             <ImageIcon className="h-7 w-7" />
           ) : (
             <Camera className="h-7 w-7" />
           )}
         </div>
-        {form.photoUrl ? (
+        {showImage ? (
           <img
             src={form.photoUrl}
             alt="Plant preview"
             className="max-h-40 w-full rounded-md object-cover"
-            onError={(e) => {
-              (e.currentTarget as HTMLImageElement).style.display = 'none'
-            }}
+            onError={() => setErroredUrl(form.photoUrl)}
           />
         ) : (
           <>
             <p className="font-display text-base font-bold text-fg">Plant Photo</p>
             <p className="text-sm text-fg-3 max-w-xs">
-              Optional. Add a link to track visual growth from day one.
+              {form.photoUrl && erroredUrl === form.photoUrl
+                ? "We couldn't load that image. Double-check the URL."
+                : 'Optional. Add a link to track visual growth from day one.'}
             </p>
           </>
         )}

@@ -15,7 +15,7 @@
 
 import { useNavigate } from 'react-router-dom'
 import { useMemo, useState } from 'react'
-import { Leaf, Search, LogOut } from 'lucide-react'
+import { Leaf, Search, LogOut, Plus } from 'lucide-react'
 import { useAuth } from '@/lib/stores/auth'
 import { usePlants } from '@/lib/hooks/usePlants'
 import { useCareLogs } from '@/lib/hooks/useCareLogs'
@@ -62,9 +62,13 @@ function PlantCardWithCareTag({
   plant: Plant
   onClick: () => void
 }) {
+  // Narrow per-card query to the single most recent water log: deriveCareTag
+  // only inspects water events, and a 1-row payload bounds the N+1 cost
+  // (one query per visible card) until a server-side aggregate lands.
   const { data: careLogsData } = useCareLogs(plant.id, {
+    logType: 'water',
     sortOrder: 'desc',
-    limit: 20,
+    limit: 1,
   })
 
   const careTag: CareTag | undefined = useMemo(() => {
@@ -147,6 +151,14 @@ export default function GardenPage() {
             >
               {user?.name || user?.email}
             </span>
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="inline-flex items-center gap-1.5 rounded-md bg-accent px-3 py-2 text-sm font-semibold text-bg shadow-accent-glow transition-transform hover:scale-[1.02] focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+              aria-label="Add plant"
+            >
+              <Plus className="h-4 w-4" />
+              <span className="hidden sm:inline">Add</span>
+            </button>
             <button
               onClick={handleLogout}
               className="rounded-md border border-line bg-card p-2 text-fg-2 transition-colors hover:bg-card-2 hover:text-fg focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
@@ -232,6 +244,15 @@ export default function GardenPage() {
                 ? 'Try adjusting your filters or search term'
                 : 'Start your growing journey by adding your first plant'}
             </p>
+            {!search && stageFilter === 'all' && (
+              <button
+                onClick={() => setShowAddModal(true)}
+                className="inline-flex items-center gap-2 rounded-md bg-accent px-4 py-2.5 text-sm font-semibold text-bg shadow-accent-glow transition-transform hover:scale-[1.02] focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+              >
+                <Plus className="h-4 w-4" />
+                Add Your First Plant
+              </button>
+            )}
           </div>
         )}
       </main>

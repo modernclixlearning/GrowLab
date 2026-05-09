@@ -12,7 +12,7 @@
  */
 
 import { useNavigate } from 'react-router-dom'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   Leaf,
   LogOut,
@@ -47,15 +47,20 @@ function RecentCareTaskRow({
 }) {
   const { data } = useCareLogs(plant.id, { sortOrder: 'desc', limit: 5 })
 
-  const recent: CareLog | null = useMemo(() => {
-    if (!data?.careLogs?.length) return null
+  // Compute the cutoff each render so it stays current as React Query
+  // refetches on focus. A `useMemo` keyed on `data` would freeze the
+  // 48h window for as long as the dashboard remains open with stale
+  // data, hiding entries that drift past the boundary. The work is
+  // O(min(5, careLogs.length)) — cheap enough not to memoize.
+  let recent: CareLog | null = null
+  if (data?.careLogs?.length) {
     const cutoff = Date.now() - RECENT_HOURS * 60 * 60 * 1000
     const log = data.careLogs.find((l) => {
       const ts = new Date(l.loggedAt).getTime()
       return !Number.isNaN(ts) && ts >= cutoff
     })
-    return log ?? null
-  }, [data])
+    recent = log ?? null
+  }
 
   if (!recent) return null
 

@@ -3,9 +3,9 @@
  *
  * FIXME(f1): same constraint as the route smoke tests — Vitest is `node`
  * env without jsdom/RTL, and adding deps is forbidden by the F1 hard
- * rules. We verify the module loads, the createable stages are still 7
- * (Master Plan §3 F1.5 — Basic/Expert toggle is F2), and the stage list
- * does not include the terminal `completed` state.
+ * rules. We verify the module loads, the creatable stages are 6
+ * (Master Plan §3 F1.5 — `completed` excluded; Basic/Expert toggle is F2),
+ * and the stage list does not include the terminal `completed` state.
  *
  * The 3-step flow's interactive behaviour is covered by the Playwright
  * golden in `tests/visual/add-plant.spec.ts` (TBD — F2 wires deeper
