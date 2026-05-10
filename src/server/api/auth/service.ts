@@ -7,7 +7,7 @@
 
 import { eq } from 'drizzle-orm'
 import { db } from '@/server/db'
-import { users, refreshTokens, type User, type NewUser } from '@/server/db/schema'
+import { users, refreshTokens, tents, type User, type NewUser } from '@/server/db/schema'
 import { hashPassword, verifyPassword } from '@/server/lib/password'
 import {
   generateAccessToken,
@@ -342,7 +342,6 @@ export async function updateCurrentUser(
 ): Promise<AuthResult<{ user: PublicUser }>> {
   // Ownership check on `defaultTentId` if provided.
   if (input.defaultTentId !== undefined && input.defaultTentId !== null) {
-    const { tents } = await import('@/server/db/schema')
     const tent = await db.query.tents.findFirst({
       where: eq(tents.id, input.defaultTentId),
     })

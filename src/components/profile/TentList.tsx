@@ -52,10 +52,20 @@ export function TentList({ tents, onEdit }: TentListProps) {
                 {tent.name}
               </p>
               <p className="mt-0.5 truncate font-mono text-[11px] uppercase tracking-eyebrow text-fg-3">
+                {/* `!= null` instead of truthy: a numeric "0" string is
+                    falsy in some Drizzle return paths, which would silently
+                    hide a 0% humidity / 0°C reading. Empty-string check
+                    only on the free-form text field. */}
                 {[
-                  tent.lightTarget && `LIGHT ${tent.lightTarget}`,
-                  tent.humidityTargetPct && `${tent.humidityTargetPct}% RH`,
-                  tent.tempTargetC && `${tent.tempTargetC}°C`,
+                  tent.lightTarget != null && tent.lightTarget !== ''
+                    ? `LIGHT ${tent.lightTarget}`
+                    : null,
+                  tent.humidityTargetPct != null
+                    ? `${tent.humidityTargetPct}% RH`
+                    : null,
+                  tent.tempTargetC != null
+                    ? `${tent.tempTargetC}°C`
+                    : null,
                 ]
                   .filter(Boolean)
                   .join(' · ') || 'No targets set'}

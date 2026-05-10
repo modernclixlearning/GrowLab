@@ -11,7 +11,6 @@
  * Run via `npm run db:seed`.
  */
 
-import { sql } from 'drizzle-orm'
 import { db } from '../index'
 import {
   strainTemplates,
@@ -109,8 +108,6 @@ export async function runSeed(): Promise<void> {
   console.log(`[seed] strain_templates: inserted ${inserted} new rows`)
   // Force the postgres pool to close so the process exits.
   await db.$client.end({ timeout: 5 })
-  // Sanity ping to keep TS happy when sql is unused above.
-  void sql`SELECT 1`
 }
 
 // When invoked directly: `tsx src/server/db/seed/strain-templates.ts`

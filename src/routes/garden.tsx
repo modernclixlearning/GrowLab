@@ -13,7 +13,7 @@
  *   - Per-plant `careTag` is derived in the parent and passed to `<PlantCard>`.
  */
 
-import { useNavigate } from 'react-router-dom'
+import { Navigate, useNavigate } from 'react-router-dom'
 import { useEffect, useMemo, useState } from 'react'
 import { Leaf, Search, LogOut, Plus } from 'lucide-react'
 import { useAuth } from '@/lib/stores/auth'
@@ -114,10 +114,11 @@ export default function GardenPage() {
     setStageFilter('all')
   }, [stageMode])
 
-  // Redirect to login if not authenticated
+  // Redirect to login if not authenticated. Returning <Navigate> instead of
+  // calling navigate() keeps the render side-effect-free (avoids "cannot
+  // update during render" warnings and double-navigation loops).
   if (!authLoading && !isAuthenticated) {
-    navigate('/login')
-    return null
+    return <Navigate to="/login" replace />
   }
 
   // Fetch the full plant list once and apply filters client-side so the

@@ -13,7 +13,7 @@
  * feedback (CLAUDE.md UI Feedback Standard).
  */
 
-import { useNavigate, useParams } from 'react-router-dom'
+import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import {
@@ -99,10 +99,10 @@ export default function PlantDetailPage() {
   const deletePlant = useDeletePlant()
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
-  // Redirect to login if not authenticated
+  // Redirect to login without calling navigate() during render — using the
+  // <Navigate> element keeps the render pure.
   if (!authLoading && !isAuthenticated) {
-    navigate('/login')
-    return null
+    return <Navigate to="/login" replace />
   }
 
   if (authLoading || isLoading) {

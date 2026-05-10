@@ -5,9 +5,10 @@
  */
 
 /**
- * Stage mode toggle — Basic (3 buckets) vs Expert (7 stages).
- * Storage is always the 7-stage Expert model (issue 003 / N11); this flag
- * is purely presentational.
+ * Stage mode toggle — Basic (4 buckets: Seedling / Veg / Flower / Harvest)
+ * vs Expert (7 stages: seedling / vegetative / flowering / harvesting /
+ * drying / curing / completed). Storage is always the 7-stage Expert model
+ * (issue 003 / N11); this flag is purely presentational.
  */
 export type StageMode = 'basic' | 'expert'
 

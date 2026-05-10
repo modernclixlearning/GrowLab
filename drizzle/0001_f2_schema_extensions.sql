@@ -21,19 +21,19 @@ CREATE TABLE IF NOT EXISTS "strain_templates" (
 	CONSTRAINT "strain_templates_name_unique" UNIQUE("name")
 );
 --> statement-breakpoint
-ALTER TABLE "users" ADD COLUMN "stage_mode" text DEFAULT 'expert' NOT NULL;--> statement-breakpoint
-ALTER TABLE "users" ADD COLUMN "units_preference" jsonb;--> statement-breakpoint
-ALTER TABLE "users" ADD COLUMN "avatar_url" text;--> statement-breakpoint
-ALTER TABLE "users" ADD COLUMN "notification_prefs" jsonb;--> statement-breakpoint
-ALTER TABLE "users" ADD COLUMN "default_tent_id" text;--> statement-breakpoint
-ALTER TABLE "users" ADD COLUMN "has_onboarded" boolean DEFAULT false NOT NULL;--> statement-breakpoint
-ALTER TABLE "plants" ADD COLUMN "tent_id" text;--> statement-breakpoint
-ALTER TABLE "plants" ADD COLUMN "strain_template_id" text;--> statement-breakpoint
-ALTER TABLE "plants" ADD COLUMN "strain_name" text;--> statement-breakpoint
-ALTER TABLE "plants" ADD COLUMN "stage_duration_override" jsonb;--> statement-breakpoint
-ALTER TABLE "plants" ADD COLUMN "light_schedule" text;--> statement-breakpoint
-ALTER TABLE "plants" ADD COLUMN "hero_photo_url" text;--> statement-breakpoint
-ALTER TABLE "plants" ADD COLUMN "week_delta_cache" numeric(6, 2);--> statement-breakpoint
+ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "stage_mode" text DEFAULT 'expert' NOT NULL;--> statement-breakpoint
+ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "units_preference" jsonb;--> statement-breakpoint
+ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "avatar_url" text;--> statement-breakpoint
+ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "notification_prefs" jsonb;--> statement-breakpoint
+ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "default_tent_id" text;--> statement-breakpoint
+ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "has_onboarded" boolean DEFAULT false NOT NULL;--> statement-breakpoint
+ALTER TABLE "plants" ADD COLUMN IF NOT EXISTS "tent_id" text;--> statement-breakpoint
+ALTER TABLE "plants" ADD COLUMN IF NOT EXISTS "strain_template_id" text;--> statement-breakpoint
+ALTER TABLE "plants" ADD COLUMN IF NOT EXISTS "strain_name" text;--> statement-breakpoint
+ALTER TABLE "plants" ADD COLUMN IF NOT EXISTS "stage_duration_override" jsonb;--> statement-breakpoint
+ALTER TABLE "plants" ADD COLUMN IF NOT EXISTS "light_schedule" text;--> statement-breakpoint
+ALTER TABLE "plants" ADD COLUMN IF NOT EXISTS "hero_photo_url" text;--> statement-breakpoint
+ALTER TABLE "plants" ADD COLUMN IF NOT EXISTS "week_delta_cache" numeric(6, 2);--> statement-breakpoint
 DO $$ BEGIN
  ALTER TABLE "tents" ADD CONSTRAINT "tents_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;
 EXCEPTION

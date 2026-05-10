@@ -27,6 +27,7 @@ import type { ReactNode } from 'react'
 import { Eyebrow } from '@/components/shell'
 import { ToggleStageMode } from './ToggleStageMode'
 import type { StageMode } from '@/types/auth'
+import { version as PKG_VERSION } from '../../../package.json'
 
 export interface PrefsListProps {
   stageMode: StageMode
@@ -35,7 +36,10 @@ export interface PrefsListProps {
   onManageTents: () => void
 }
 
-const APP_VERSION = 'v0.2.0 · F2'
+// Source the version string from package.json so the About row stays in
+// sync with releases. tsconfig has resolveJsonModule + Vite tree-shakes
+// JSON imports, so only the literal value is bundled.
+const APP_VERSION = `v${PKG_VERSION}`
 const REPO_URL = 'https://github.com/modernclixlearning/growlab'
 
 export function PrefsList({

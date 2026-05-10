@@ -10,7 +10,7 @@
  *     in F1; now lives in Profile so the regression is closed).
  */
 
-import { useNavigate } from 'react-router-dom'
+import { Navigate, useNavigate } from 'react-router-dom'
 import { useState } from 'react'
 import { Leaf, LogOut } from 'lucide-react'
 import { useAuth } from '@/lib/stores/auth'
@@ -32,9 +32,10 @@ export default function ProfilePage() {
   const [tentModalOpen, setTentModalOpen] = useState(false)
   const [tentBeingEdited, setTentBeingEdited] = useState<Tent | null>(null)
 
+  // Side-effect-free redirect: <Navigate> avoids the "cannot update during
+  // render" warning that calling navigate() in render produces.
   if (!authLoading && !isAuthenticated) {
-    navigate('/login')
-    return null
+    return <Navigate to="/login" replace />
   }
 
   if (authLoading || !user) {
