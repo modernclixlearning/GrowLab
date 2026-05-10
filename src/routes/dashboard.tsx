@@ -4,11 +4,8 @@
  * F1 redesign (Master Plan §3 F1):
  *   - <StatCard> tiles for active/total/seedling/flowering counts.
  *   - <CareTaskCard> read-only of recent care logs from the last 48h.
- *     `scheduledAt`/`completedAt` semantics arrive in F3; F1 uses
- *     `loggedAt` and frames these as "recent activity".
- *   - <MiniChart> placeholder: 5 weekly buckets derived from plant
- *     `createdAt` ages; F5 swaps in real growth measurements.
- *   - Layout follows `prototype/screens/dashboard.jsx`.
+ * F3 adds:
+ *   - "Pending today" section above "Recent Activity" using useScheduledCareLogs.
  */
 
 import { useNavigate } from 'react-router-dom'
@@ -20,13 +17,15 @@ import {
   Sprout,
   TreePine,
   Activity,
+  CalendarCheck,
 } from 'lucide-react'
 import { useAuth } from '@/lib/stores/auth'
 import { usePlants } from '@/lib/hooks/usePlants'
-import { useCareLogs } from '@/lib/hooks/useCareLogs'
+import { useCareLogs, useScheduledCareLogs, useCompleteCareLog } from '@/lib/hooks/useCareLogs'
 import { AddPlantModal } from '@/components/plants/AddPlantModal'
 import { Eyebrow, H1, H2, SystemPulse } from '@/components/shell'
 import { StatCard, CareTaskCard, MiniChart } from '@/components/dashboard'
+import { TaskRow } from '@/components/schedule'
 import { derivePlantStats } from '@/lib/plantStats'
 import type { Plant } from '@/types/plants'
 import type { CareLog } from '@/types/care-logs'
@@ -35,8 +34,7 @@ const RECENT_HOURS = 48
 
 /**
  * Subscribes to care logs for a single plant and forwards the most recent
- * entry within the last 48h to the parent. Returning `null` when there is
- * nothing to show keeps the parent free of conditional state.
+ * entry within the last 48h to the parent.
  */
 function RecentCareTaskRow({
   plant,
@@ -47,11 +45,6 @@ function RecentCareTaskRow({
 }) {
   const { data } = useCareLogs(plant.id, { sortOrder: 'desc', limit: 5 })
 
-  // Compute the cutoff each render so it stays current as React Query
-  // refetches on focus. A `useMemo` keyed on `data` would freeze the
-  // 48h window for as long as the dashboard remains open with stale
-  // data, hiding entries that drift past the boundary. The work is
-  // O(min(5, careLogs.length)) — cheap enough not to memoize.
   let recent: CareLog | null = null
   if (data?.careLogs?.length) {
     const cutoff = Date.now() - RECENT_HOURS * 60 * 60 * 1000
@@ -119,6 +112,23 @@ export default function DashboardPage() {
   const stats = derivePlantStats(plants)
   const seedlings = plants.filter((p) => p.growthStage === 'seedling').length
   const totalPlants = plants.length
+
+  // F3 — "Pending today": scheduled tasks due today that aren't yet completed.
+  const todayStart = new Date()
+  todayStart.setHours(0, 0, 0, 0)
+  const todayEnd = new Date()
+  todayEnd.setHours(23, 59, 59, 999)
+
+  const { data: pendingData } = useScheduledCareLogs({
+    scheduledFrom: todayStart.toISOString(),
+    scheduledTo: todayEnd.toISOString(),
+  })
+  const { mutate: completeCareLog, isPending: isCompleting } = useCompleteCareLog()
+
+  const plantMap: Record<string, string> = {}
+  for (const p of plants) plantMap[p.id] = p.name
+
+  const pendingTasks = (pendingData?.careLogs ?? []).filter((l) => !l.completedAt)
 
   // Limit the "recent care" subscription to the 5 most recently updated
   // plants — bounds the query cost while still surfacing a useful list.
@@ -210,6 +220,32 @@ export default function DashboardPage() {
             />
           </div>
         </section>
+
+        {/* F3 — Pending today */}
+        {pendingTasks.length > 0 && (
+          <section aria-labelledby="pending-heading">
+            <div className="mb-3 flex items-baseline justify-between">
+              <H2 id="pending-heading" className="flex items-center gap-2 text-[18px]">
+                <CalendarCheck className="h-4 w-4 text-accent" />
+                Pending today
+              </H2>
+              <span className="font-mono text-[11px] text-fg-2">
+                {pendingTasks.length} task{pendingTasks.length !== 1 ? 's' : ''}
+              </span>
+            </div>
+            <div className="space-y-2">
+              {pendingTasks.slice(0, 5).map((log) => (
+                <TaskRow
+                  key={log.id}
+                  careLog={log}
+                  plantName={plantMap[log.plantId] ?? 'Plant'}
+                  onComplete={(id) => completeCareLog(id)}
+                  isCompleting={isCompleting}
+                />
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Recent activity (CareTaskCards) */}
         <section aria-labelledby="recent-heading">

@@ -101,6 +101,11 @@ export interface MockCareLog {
   unit: string | null
   notes: string | null
   loggedAt: string
+  // F3 scheduling fields — optional so existing fixture call sites need no changes
+  scheduledAt?: string | null
+  completedAt?: string | null
+  recurrenceRule?: Record<string, unknown> | null
+  parentScheduleId?: string | null
 }
 
 export const FIXED_USER: MockUser = {
@@ -288,6 +293,12 @@ interface MockOptions {
   tents?: MockTent[]
   /** Strain templates returned by `GET /api/strain-templates`. Default empty. (F2) */
   strainTemplates?: MockStrainTemplate[]
+  /**
+   * F3 — scheduled care logs returned by `GET /api/care-logs`.
+   * The mock ignores query params (scheduledFrom/scheduledTo/plantId)
+   * to keep fixtures simple. Default empty.
+   */
+  scheduledCareLogs?: MockCareLog[]
 }
 
 /**
@@ -324,6 +335,7 @@ function withDerivedStats(plant: MockPlant): MockPlant {
 export async function mockGrowlabApi(page: Page, opts: MockOptions = {}) {
   const plants = (opts.plants ?? []).map(withDerivedStats)
   const careLogsByPlant = opts.careLogsByPlant ?? {}
+  const scheduledCareLogs: MockCareLog[] = opts.scheduledCareLogs ?? []
   const initialUser = opts.user === undefined ? FIXED_USER : opts.user
   // Mutable so PATCH /api/auth/me can update what subsequent GET /me returns
   // within the same test (e.g. onboarding completion → user.hasOnboarded=true).
@@ -495,6 +507,39 @@ export async function mockGrowlabApi(page: Page, opts: MockOptions = {}) {
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify(ok({ careLogs: logs, total: logs.length })),
+      })
+    }
+
+    // F3 — Scheduled care logs (GET /api/care-logs)
+    // Mock ignores query params — callers supply the full fixture list.
+    if (pathname === '/api/care-logs' && request.method() === 'GET') {
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(ok({ careLogs: scheduledCareLogs, total: scheduledCareLogs.length })),
+      })
+    }
+
+    // F3 — Complete a care log (POST /api/care-logs/:id/complete)
+    const completeMatch = pathname.match(/^\/api\/care-logs\/([^/]+)\/complete$/)
+    if (completeMatch && request.method() === 'POST') {
+      const logId = completeMatch[1]!
+      const log = scheduledCareLogs.find((l) => l.id === logId)
+      if (!log) {
+        return route.fulfill({
+          status: 404,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            success: false,
+            error: { code: 'CARE_LOG_NOT_FOUND', message: 'Not found' },
+          }),
+        })
+      }
+      const completed: MockCareLog = { ...log, completedAt: FIXED_NOW, loggedAt: FIXED_NOW }
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(ok({ careLog: completed, next: null })),
       })
     }
 

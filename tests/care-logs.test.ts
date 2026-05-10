@@ -2,12 +2,15 @@
  * GrowLab Care Logs Tests
  * 
  * Unit tests for care log validation schemas and type constants.
+ * F3 adds: recurrenceRuleSchema, createCareLogSchema F3 fields,
+ *           listScheduledCareLogsQuerySchema.
  */
 
 import { describe, it, expect } from 'vitest'
 import {
   createCareLogSchema,
   listCareLogsQuerySchema,
+  listScheduledCareLogsQuerySchema,
 } from '@/server/api/care-logs/schemas'
 import { CARE_LOG_TYPES } from '@/server/db/schema/care-logs'
 
@@ -169,5 +172,127 @@ describe('Care Log Type Constants', () => {
     expect(CARE_LOG_TYPES).toContain('train')
     expect(CARE_LOG_TYPES).toContain('other')
     expect(CARE_LOG_TYPES.length).toBe(6)
+  })
+})
+
+// ──────────────────────────────────────────────────────────────────────
+// F3 — createCareLogSchema with scheduling fields
+// ──────────────────────────────────────────────────────────────────────
+
+describe('F3 — createCareLogSchema scheduling fields', () => {
+  it('accepts scheduledAt as ISO datetime', () => {
+    const result = createCareLogSchema.safeParse({
+      logType: 'water',
+      scheduledAt: '2026-05-10T08:00:00.000Z',
+    })
+    expect(result.success).toBe(true)
+  })
+
+  it('rejects scheduledAt as plain date string', () => {
+    const result = createCareLogSchema.safeParse({
+      logType: 'water',
+      scheduledAt: '2026-05-10',
+    })
+    expect(result.success).toBe(false)
+  })
+
+  it('accepts daily recurrenceRule', () => {
+    const result = createCareLogSchema.safeParse({
+      logType: 'feed',
+      scheduledAt: '2026-05-11T08:00:00.000Z',
+      recurrenceRule: { frequency: 'daily', interval: 1 },
+    })
+    expect(result.success).toBe(true)
+  })
+
+  it('accepts weekly recurrenceRule with byWeekday', () => {
+    const result = createCareLogSchema.safeParse({
+      logType: 'feed',
+      scheduledAt: '2026-05-11T08:00:00.000Z',
+      recurrenceRule: { frequency: 'weekly', interval: 2, byWeekday: [1, 3, 5] },
+    })
+    expect(result.success).toBe(true)
+  })
+
+  it('rejects recurrenceRule with interval 0', () => {
+    const result = createCareLogSchema.safeParse({
+      logType: 'water',
+      recurrenceRule: { frequency: 'daily', interval: 0 },
+    })
+    expect(result.success).toBe(false)
+  })
+
+  it('rejects recurrenceRule with unknown key (strict)', () => {
+    const result = createCareLogSchema.safeParse({
+      logType: 'water',
+      recurrenceRule: { frequency: 'daily', interval: 1, badKey: true },
+    })
+    expect(result.success).toBe(false)
+  })
+
+  it('rejects byWeekday value > 6', () => {
+    const result = createCareLogSchema.safeParse({
+      logType: 'water',
+      recurrenceRule: { frequency: 'weekly', interval: 1, byWeekday: [7] },
+    })
+    expect(result.success).toBe(false)
+  })
+
+  it('rejects byWeekday value < 0', () => {
+    const result = createCareLogSchema.safeParse({
+      logType: 'water',
+      recurrenceRule: { frequency: 'weekly', interval: 1, byWeekday: [-1] },
+    })
+    expect(result.success).toBe(false)
+  })
+
+  it('accepts count = 0 (exhausted marker)', () => {
+    const result = createCareLogSchema.safeParse({
+      logType: 'feed',
+      scheduledAt: '2026-05-11T08:00:00.000Z',
+      recurrenceRule: { frequency: 'daily', interval: 1, count: 0 },
+    })
+    expect(result.success).toBe(true)
+  })
+
+  it('rejects count < 0', () => {
+    const result = createCareLogSchema.safeParse({
+      logType: 'feed',
+      recurrenceRule: { frequency: 'daily', interval: 1, count: -1 },
+    })
+    expect(result.success).toBe(false)
+  })
+})
+
+// ──────────────────────────────────────────────────────────────────────
+// F3 — listScheduledCareLogsQuerySchema
+// ──────────────────────────────────────────────────────────────────────
+
+describe('F3 — listScheduledCareLogsQuerySchema', () => {
+  it('accepts empty params (all optional)', () => {
+    const result = listScheduledCareLogsQuerySchema.safeParse({})
+    expect(result.success).toBe(true)
+  })
+
+  it('accepts valid scheduledFrom and scheduledTo ISO datetimes', () => {
+    const result = listScheduledCareLogsQuerySchema.safeParse({
+      scheduledFrom: '2026-05-01T00:00:00.000Z',
+      scheduledTo: '2026-05-07T23:59:59.999Z',
+    })
+    expect(result.success).toBe(true)
+  })
+
+  it('rejects scheduledFrom as plain date string', () => {
+    const result = listScheduledCareLogsQuerySchema.safeParse({
+      scheduledFrom: '2026-05-01',
+    })
+    expect(result.success).toBe(false)
+  })
+
+  it('accepts optional plantId', () => {
+    const result = listScheduledCareLogsQuerySchema.safeParse({
+      plantId: 'plant-abc',
+    })
+    expect(result.success).toBe(true)
   })
 })
