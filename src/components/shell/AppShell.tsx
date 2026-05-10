@@ -26,6 +26,8 @@
 
 import type { ReactNode } from 'react'
 import { BottomNav } from './BottomNav'
+import { useAuth } from '@/lib/stores/auth'
+import { StageModeOnboarding } from '@/components/onboarding/StageModeOnboarding'
 
 export interface AppShellProps {
   children: ReactNode
@@ -43,6 +45,13 @@ export function AppShell({
   hideBottomNav = false,
   onFabClick,
 }: AppShellProps) {
+  const { user, isAuthenticated } = useAuth()
+  // Show the StageMode onboarding overlay once per user. The flag is
+  // toggled by the overlay itself via PATCH /me; the toggle in Profile
+  // is unaffected (always reversible).
+  const showOnboarding =
+    isAuthenticated && user !== null && user.hasOnboarded === false
+
   return (
     <div className="relative h-dvh w-full bg-bg font-body text-fg antialiased">
       {/* Outer centering for desktop / large screens, mobile-first inside */}
@@ -63,6 +72,8 @@ export function AppShell({
 
         {!hideBottomNav && <BottomNav onFabClick={onFabClick} />}
       </div>
+
+      {showOnboarding && <StageModeOnboarding />}
     </div>
   )
 }
