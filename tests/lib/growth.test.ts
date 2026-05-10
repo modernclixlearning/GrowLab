@@ -5,7 +5,12 @@
  * raw GrowthMeasurement rows into normalized weekly GrowthBar data.
  */
 
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest'
+
+// Freeze time so ISO-week bucketing is deterministic regardless of when tests run
+const FIXED_DATE = new Date('2026-05-07T12:00:00.000Z')
+beforeAll(() => vi.useFakeTimers({ now: FIXED_DATE }))
+afterAll(() => vi.useRealTimers())
 
 // Mock db so the module-level DATABASE_URL check doesn't fire in tests
 vi.mock('@/server/db', () => ({ db: {} }))

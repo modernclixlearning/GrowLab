@@ -27,7 +27,7 @@ export interface SensorReading {
   plantId: string | null
   tentId: string | null
   metric: SensorMetric
-  value: number
+  value: string
   unit: string
   recordedAt: string
 }
@@ -36,7 +36,7 @@ export interface GrowthMeasurement {
   id: string
   plantId: string
   metric: string
-  value: number
+  value: string
   recordedAt: string
 }
 

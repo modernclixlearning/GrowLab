@@ -14,7 +14,10 @@ export interface RawReading {
 
 export interface SensorCredentials {
   apiKey: string
-  [k: string]: string
+  secret?: string
+  deviceId?: string
+  model?: string
+  [k: string]: string | undefined
 }
 
 export interface SensorProvider {

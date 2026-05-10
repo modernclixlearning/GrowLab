@@ -4,11 +4,8 @@
  * Polls cloud sensor APIs on a 5-minute interval (±30s jitter) and
  * stores readings in sensor_readings.
  *
- * Backoff policy on consecutive errors:
- *   1 error  → retry in 1 min
- *   2 errors → retry in 5 min
- *   3 errors → retry in 15 min
- *   4+ errors → retry in 60 min
+ * Backoff policy on consecutive errors (simplified):
+ *   Any error → skip device for 1 min before retrying
  *
  * Retention: readings older than 90 days are cleaned up nightly.
  *
@@ -98,39 +95,39 @@ export function startPollingJob(): void {
       const devices = await db.select().from(sensorDevices)
       const now = Date.now()
 
-      for (const device of devices) {
-        if (device.provider === 'manual') continue
-
-        // Honour backoff: skip if last_poll_at is too recent given error count
+      const toPoll = devices.filter((device) => {
+        if (device.provider === 'manual') return false
+        // Honour 1-minute backoff for any device with a recorded error
         if (device.lastError && device.lastPollAt) {
-          const errorCount = 1 // simplified: treat any error as 1st error for backoff
-          const backoff = getBackoffMs(errorCount)
+          const backoff = getBackoffMs(1)
           const elapsed = now - new Date(device.lastPollAt).getTime()
-          if (elapsed < backoff) continue
+          if (elapsed < backoff) return false
         }
+        return true
+      })
 
-        // Fire-and-forget; errors are handled inside pollOnce
-        pollOnce(device).catch((err: unknown) => {
-          console.error(`[sensor-poll] Unexpected error for device ${device.id}:`, err)
-        })
-      }
+      // Bounded concurrency: await all polls together instead of fire-and-forget
+      await Promise.allSettled(
+        toPoll.map((device) =>
+          pollOnce(device).catch((err: unknown) => {
+            console.error(`[sensor-poll] Unexpected error for device ${device.id}:`, err)
+          }),
+        ),
+      )
     } catch (err) {
       console.error('[sensor-poll] Failed to load devices:', err)
     }
   }
 
-  // Initial poll after a short delay so the server is ready
-  setTimeout(
-    () => {
-      void runPoll()
-      // Recurring interval with jitter
-      setInterval(() => {
-        const delay = POLL_INTERVAL_MS + jitter()
-        setTimeout(() => void runPoll(), Math.max(0, delay))
-      }, POLL_INTERVAL_MS)
-    },
-    10_000, // 10s startup delay
-  )
+  // Recursive setTimeout: the next poll is scheduled only after the current one
+  // completes, preventing overlap and honouring the intended ~5-min cadence.
+  const scheduleNext = () => {
+    const delay = Math.max(0, POLL_INTERVAL_MS + jitter())
+    setTimeout(() => void runPoll().then(scheduleNext), delay)
+  }
+
+  // Initial poll after a short startup delay, then keep scheduling
+  setTimeout(() => void runPoll().then(scheduleNext), 10_000)
 
   console.log('[sensor-poll] Polling job started (interval: ~5 min)')
 }

@@ -153,6 +153,16 @@ export async function updateSensorDevice(
     return { success: false, error: { code: SensorErrorCodes.DEVICE_FORBIDDEN, message: 'Access denied' } }
   }
 
+  // Verify ownership of any target being assigned
+  if (input.targetPlantId != null) {
+    const check = await verifyPlantOwnership(input.targetPlantId, userId)
+    if (!check.success) return check
+  }
+  if (input.targetTentId != null) {
+    const check = await verifyTentOwnership(input.targetTentId, userId)
+    if (!check.success) return check
+  }
+
   const updates: Partial<SensorDevice> = {}
   if (input.provider !== undefined) updates.provider = input.provider
   if (input.label !== undefined) updates.label = input.label

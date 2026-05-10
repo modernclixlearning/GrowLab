@@ -88,9 +88,6 @@ export function SensorModal({ device, isOpen, onClose, targetPlantId, targetTent
     if (form.provider !== 'manual' && !isEdit && !form.apiKey.trim()) {
       return 'API key is required for this provider'
     }
-    if (!form.targetPlantId && !form.targetTentId) {
-      return 'Select a target plant or tent'
-    }
     return null
   }
 

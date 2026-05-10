@@ -46,7 +46,6 @@ export function SensorDevicesSection() {
     setPendingDelete(device.id)
     try {
       await deleteDevice.mutateAsync(device.id)
-      toast.success(`${device.label} removed`)
     } catch (err) {
       toast.error(getApiErrorToastMessage(err, 'Failed to remove sensor'))
     } finally {
@@ -67,7 +66,7 @@ export function SensorDevicesSection() {
   return (
     <section className="px-5 pb-6" aria-labelledby="sensors-heading">
       <div className="mb-3 flex items-center justify-between">
-        <Eyebrow tone="muted" id="sensors-heading">
+        <Eyebrow tone="muted" id="sensors-heading" role="heading" aria-level={2}>
           Sensor Devices
         </Eyebrow>
         <button

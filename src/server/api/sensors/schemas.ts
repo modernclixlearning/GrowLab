@@ -21,13 +21,14 @@ export const createSensorDeviceSchema = z
     targetTentId: z.string().optional(),
   })
   .superRefine((val, ctx) => {
-    // Exactly one of targetPlantId/targetTentId must be present
+    // Cannot set both targetPlantId and targetTentId simultaneously
     const hasPlant = !!val.targetPlantId
     const hasTent = !!val.targetTentId
-    if (hasPlant === hasTent) {
+    if (hasPlant && hasTent) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: 'Exactly one of targetPlantId or targetTentId must be provided',
+        message: 'targetPlantId and targetTentId are mutually exclusive',
+        path: ['targetTentId'],
       })
     }
     // apiKey required for non-manual providers
@@ -42,13 +43,23 @@ export const createSensorDeviceSchema = z
 
 export type CreateSensorDeviceInput = z.infer<typeof createSensorDeviceSchema>
 
-export const updateSensorDeviceSchema = z.object({
-  provider: z.enum(SENSOR_PROVIDERS).optional(),
-  apiKey: z.string().min(1).optional(),
-  label: z.string().min(1).max(100).optional(),
-  targetPlantId: z.string().optional().nullable(),
-  targetTentId: z.string().optional().nullable(),
-})
+export const updateSensorDeviceSchema = z
+  .object({
+    provider: z.enum(SENSOR_PROVIDERS).optional(),
+    apiKey: z.string().min(1).optional(),
+    label: z.string().min(1).max(100).optional(),
+    targetPlantId: z.string().optional().nullable(),
+    targetTentId: z.string().optional().nullable(),
+  })
+  .superRefine((val, ctx) => {
+    if (val.targetPlantId && val.targetTentId) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'targetPlantId and targetTentId are mutually exclusive',
+        path: ['targetTentId'],
+      })
+    }
+  })
 
 export type UpdateSensorDeviceInput = z.infer<typeof updateSensorDeviceSchema>
 
@@ -68,6 +79,7 @@ export const listReadingsQuerySchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: 'Either plantId or tentId must be provided',
+        path: ['plantId'],
       })
     }
   })
