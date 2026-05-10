@@ -20,6 +20,7 @@ import { AvatarHeader } from '@/components/profile/AvatarHeader'
 import { PrefsList } from '@/components/profile/PrefsList'
 import { TentList } from '@/components/profile/TentList'
 import { TentModal } from '@/components/profile/TentModal'
+import { SensorDevicesSection } from '@/components/profile/SensorDevicesSection'
 import { H2 } from '@/components/shell'
 import type { Tent } from '@/types/tents'
 
@@ -83,6 +84,9 @@ export default function ProfilePage() {
       />
 
       <TentList tents={tents} onEdit={openEditTent} />
+
+      {/* F5 — Sensor Devices (Expert only) */}
+      {user.stageMode === 'expert' && <SensorDevicesSection />}
 
       <section className="px-5 pb-10">
         <H2 className="sr-only">Account</H2>
