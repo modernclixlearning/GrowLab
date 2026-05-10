@@ -31,6 +31,10 @@ import { useCareLogs } from '@/lib/hooks/useCareLogs'
 import { useStrainTemplates } from '@/lib/hooks/useStrainTemplates'
 import { CareLogList } from '@/components/care-logs/CareLogList'
 import { LightCyclePill } from '@/components/plants/LightCyclePill'
+import { PhotoTimeline } from '@/components/plants/PhotoTimeline'
+import { HumidityWidget } from '@/components/plants/HumidityWidget'
+import { TempWidget } from '@/components/plants/TempWidget'
+import { GrowthBars } from '@/components/plants/GrowthBars'
 import { Eyebrow, H1, H2, H3 } from '@/components/shell'
 import { deriveCareTag, CARE_TAG_TONE_CLASS } from '@/lib/careTag'
 import { getApiErrorToastMessage } from '@/lib/api/errors'
@@ -353,6 +357,26 @@ export default function PlantDetailPage() {
             <Eyebrow tone="muted" className="mb-2 block">Notes</Eyebrow>
             <p className="whitespace-pre-wrap text-sm text-fg-2">{plant.notes}</p>
           </div>
+        )}
+
+        {/* Photo Timeline (F4) */}
+        <PhotoTimeline plantId={plant.id} />
+
+        {/* F5 — Environmental data (Expert only) */}
+        {stageMode === 'expert' && (
+          <section aria-labelledby="env-heading">
+            <H2 id="env-heading" className="mb-3 text-[18px]">Environmentals</H2>
+            <div className="grid grid-cols-2 gap-3">
+              <HumidityWidget plantId={plant.id} />
+              <TempWidget
+                plantId={plant.id}
+                unit={(user?.unitsPreference as { temp?: 'C' | 'F' } | undefined)?.temp ?? 'C'}
+              />
+            </div>
+            <div className="mt-3">
+              <GrowthBars plantId={plant.id} />
+            </div>
+          </section>
         )}
 
         {/* Care Logging */}
