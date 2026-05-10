@@ -94,6 +94,9 @@ export async function createCareLog(
       notes: input.notes ?? null,
       loggedAt,
       scheduledAt,
+      // Immediate logs (no scheduledAt) are already completed — set completedAt
+      // so future queries using completedAt IS NULL for "pending" are accurate.
+      completedAt: scheduledAt ? null : loggedAt,
       recurrenceRule: input.recurrenceRule ?? null,
     })
     .returning()
@@ -243,12 +246,15 @@ export async function completeCareLog(
     }
   }
 
-  // Verify ownership via the plant
+  // Verify ownership via the plant — map plant-level errors to care-log codes.
   const ownerCheck = await verifyPlantOwnership(row.plantId, userId)
   if (!ownerCheck.success) {
+    const isNotFound = ownerCheck.error.code === CareLogErrorCodes.PLANT_NOT_FOUND
     return {
       success: false,
-      error: { code: CareLogErrorCodes.CARE_LOG_FORBIDDEN, message: 'Access denied' },
+      error: isNotFound
+        ? { code: CareLogErrorCodes.CARE_LOG_NOT_FOUND, message: 'Plant not found' }
+        : { code: CareLogErrorCodes.CARE_LOG_FORBIDDEN, message: 'Access denied' },
     }
   }
 

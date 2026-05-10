@@ -13,7 +13,7 @@ import { useScheduledCareLogs, useCompleteCareLog } from '@/lib/hooks/useCareLog
 import { usePlants } from '@/lib/hooks/usePlants'
 import type { CareLog } from '@/types/care-logs'
 
-/** Returns the Sunday that starts the ISO week containing `date`. */
+/** Returns the Sunday that starts the week containing `date` (Sun-based weeks, not ISO). */
 function startOfWeek(date: Date): Date {
   const d = new Date(date)
   d.setHours(0, 0, 0, 0)

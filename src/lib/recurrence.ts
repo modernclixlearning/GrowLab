@@ -31,10 +31,11 @@ export interface RecurrenceRule {
 
 /**
  * Add a whole number of days to a Date, returning a new Date.
+ * Uses UTC methods to avoid DST / host-timezone shifts.
  */
 function addDays(d: Date, days: number): Date {
   const result = new Date(d.getTime())
-  result.setDate(result.getDate() + days)
+  result.setUTCDate(result.getUTCDate() + days)
   return result
 }
 
@@ -80,7 +81,7 @@ export function nextOccurrence(rule: RecurrenceRule, from: Date): Date | null {
       next = addDays(from, rule.interval * 7)
     } else {
       const sorted = [...byWeekday].sort((a, b) => a - b)
-      const fromDay = from.getDay() // 0 = Sun … 6 = Sat
+      const fromDay = from.getUTCDay() // 0 = Sun … 6 = Sat (UTC)
 
       // Look for the first listed weekday strictly after fromDay (same week).
       const nextInWeek = sorted.find((d) => d > fromDay)

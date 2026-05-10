@@ -199,6 +199,7 @@ describe('F3 — createCareLogSchema scheduling fields', () => {
   it('accepts daily recurrenceRule', () => {
     const result = createCareLogSchema.safeParse({
       logType: 'feed',
+      scheduledAt: '2026-05-11T08:00:00.000Z',
       recurrenceRule: { frequency: 'daily', interval: 1 },
     })
     expect(result.success).toBe(true)
@@ -207,6 +208,7 @@ describe('F3 — createCareLogSchema scheduling fields', () => {
   it('accepts weekly recurrenceRule with byWeekday', () => {
     const result = createCareLogSchema.safeParse({
       logType: 'feed',
+      scheduledAt: '2026-05-11T08:00:00.000Z',
       recurrenceRule: { frequency: 'weekly', interval: 2, byWeekday: [1, 3, 5] },
     })
     expect(result.success).toBe(true)
@@ -247,6 +249,7 @@ describe('F3 — createCareLogSchema scheduling fields', () => {
   it('accepts count = 0 (exhausted marker)', () => {
     const result = createCareLogSchema.safeParse({
       logType: 'feed',
+      scheduledAt: '2026-05-11T08:00:00.000Z',
       recurrenceRule: { frequency: 'daily', interval: 1, count: 0 },
     })
     expect(result.success).toBe(true)

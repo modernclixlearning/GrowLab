@@ -1,5 +1,5 @@
 /**
- * DayPicker — Mon–Sun bar with task-count badges.
+ * DayPicker — Sun–Sat bar with task-count badges.
  * Keyboard accessible: left/right arrows move the selection.
  */
 
@@ -8,7 +8,7 @@ import { useRef } from 'react'
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
 interface DayPickerProps {
-  /** ISO string of the start of the current week (Sunday) */
+  /** Start of the current week (Sunday); passed as a Date object. */
   weekStart: Date
   /** Currently selected date (the component compares by date, not time) */
   selectedDate: Date

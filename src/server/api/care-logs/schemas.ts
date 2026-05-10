@@ -79,7 +79,10 @@ export const createCareLogSchema = z.object({
     .optional(),
   /** F3 — repeat rule. */
   recurrenceRule: recurrenceRuleSchema.optional(),
-})
+}).refine(
+  (data) => !data.recurrenceRule || data.scheduledAt !== undefined,
+  { message: 'scheduledAt is required when recurrenceRule is provided', path: ['scheduledAt'] },
+)
 
 // ─── Query parameters for listing per-plant logs ──────────────────────────────
 

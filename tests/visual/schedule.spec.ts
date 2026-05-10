@@ -15,7 +15,7 @@ import {
 } from './fixtures'
 import type { MockCareLog } from './fixtures'
 
-// Canonical "this week" tasks seeded in FIXED_NOW week (2026-05-04 Sun – 2026-05-10 Sat)
+// Canonical "this week" tasks seeded in FIXED_NOW week (2026-05-04 Mon – 2026-05-10 Sun)
 function scheduleWeekLogs(): MockCareLog[] {
   return [
     {
