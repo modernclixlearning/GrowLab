@@ -18,16 +18,13 @@
  * losing partial data — a state machine is overkill for 3 fields.
  */
 
-import { useState } from 'react'
-import { z } from 'zod'
+import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
 import {
   X,
   ArrowLeft,
   ArrowRight,
   Check,
-  Camera,
-  Image as ImageIcon,
   AlertCircle,
   Sprout,
   Leaf,
@@ -38,8 +35,10 @@ import {
   CheckCircle2,
 } from 'lucide-react'
 import { useCreatePlant } from '@/lib/hooks/usePlants'
+import { useUploadPhoto } from '@/lib/hooks/usePlantPhotos'
 import { getApiErrorToastMessage } from '@/lib/api/errors'
 import { Stepper } from '@/components/ui/Stepper'
+import { UploadZone } from '@/components/plants/UploadZone'
 import type { GrowthStage, StrainType } from '@/types/plants'
 import {
   GROWTH_STAGE_CONFIG,
@@ -66,15 +65,6 @@ const STAGE_ICON: Record<GrowthStage, React.ComponentType<{ className?: string }
   completed: CheckCircle2,
 }
 
-/** Optional URL validator — empty string is allowed (no photo yet). */
-const optionalUrl = z
-  .string()
-  .trim()
-  .refine(
-    (v) => v === '' || /^https?:\/\/\S+\.\S+/.test(v),
-    'Enter a valid http(s) URL or leave blank',
-  )
-
 interface AddPlantModalProps {
   isOpen: boolean
   onClose: () => void
@@ -99,8 +89,10 @@ const TOTAL_STEPS = 3
 
 export function AddPlantModal({ isOpen, onClose, onSuccess }: AddPlantModalProps) {
   const createPlant = useCreatePlant()
+  const uploadPhoto  = useUploadPhoto()
   const [step, setStep] = useState(1)
   const [form, setForm] = useState<FormState>(INITIAL)
+  const [pendingFile, setPendingFile] = useState<File | null>(null)
   const [stepError, setStepError] = useState<string | null>(null)
 
   if (!isOpen) return null
@@ -114,6 +106,7 @@ export function AddPlantModal({ isOpen, onClose, onSuccess }: AddPlantModalProps
     setForm(INITIAL)
     setStep(1)
     setStepError(null)
+    setPendingFile(null)
   }
 
   const handleClose = () => {
@@ -124,8 +117,7 @@ export function AddPlantModal({ isOpen, onClose, onSuccess }: AddPlantModalProps
   /** Validate the active step before allowing forward navigation. */
   const validateStep = (n: number): string | null => {
     if (n === 1) {
-      const parsed = optionalUrl.safeParse(form.photoUrl)
-      if (!parsed.success) return parsed.error.issues[0]?.message ?? 'Invalid URL'
+      // Photo is optional — UploadZone handles its own validation
       return null
     }
     if (n === 2) {
@@ -156,12 +148,26 @@ export function AddPlantModal({ isOpen, onClose, onSuccess }: AddPlantModalProps
     // Final step — submit.
     if (!form.strainType) return // type narrowing, validateStep already gated.
     try {
-      await createPlant.mutateAsync({
+      const plant = await createPlant.mutateAsync({
         name: form.name.trim(),
         strainType: form.strainType,
         growthStage: form.growthStage,
-        photoUrl: form.photoUrl.trim() || undefined,
       })
+
+      // Upload the pending photo now that we have a plant ID.
+      if (pendingFile && plant?.id) {
+        try {
+          await uploadPhoto.mutateAsync({
+            plantId: plant.id,
+            stage:   form.growthStage,
+            file:    pendingFile,
+          })
+        } catch {
+          // Non-fatal: plant was created; surface a soft warning.
+          toast.error('Plant created but photo upload failed — try again from the plant detail page.')
+        }
+      }
+
       toast.success(`${form.name.trim()} added to your garden`)
       onSuccess?.()
       reset()
@@ -183,7 +189,7 @@ export function AddPlantModal({ isOpen, onClose, onSuccess }: AddPlantModalProps
     step === 1 ? 'Plant Photo' : step === 2 ? 'Strain & Name' : 'Growth Stage'
 
   const isFinal = step === TOTAL_STEPS
-  const submitting = createPlant.isPending
+  const submitting = createPlant.isPending || uploadPhoto.isPending
 
   return (
     <div
@@ -232,7 +238,12 @@ export function AddPlantModal({ isOpen, onClose, onSuccess }: AddPlantModalProps
             </div>
           )}
 
-          {step === 1 && <Step1Photo form={form} update={update} />}
+          {step === 1 && (
+            <Step1Photo
+              onFileSelected={setPendingFile}
+              pendingFile={pendingFile}
+            />
+          )}
           {step === 2 && <Step2Details form={form} update={update} />}
           {step === 3 && <Step3Stage form={form} update={update} />}
         </div>
@@ -273,76 +284,43 @@ export function AddPlantModal({ isOpen, onClose, onSuccess }: AddPlantModalProps
 }
 
 // ─────────────────────────────────────────────────────────────
-// Step 1 — Photo
+// Step 1 — Photo (F4: replaced URL input with UploadZone)
 // ─────────────────────────────────────────────────────────────
 function Step1Photo({
-  form,
-  update,
+  onFileSelected,
+  pendingFile,
 }: {
-  form: FormState
-  update: <K extends keyof FormState>(key: K, value: FormState[K]) => void
+  onFileSelected: (file: File | null) => void
+  pendingFile:    File | null
 }) {
-  // Track which URL (if any) failed to load so we can fall back to the
-  // placeholder copy. Comparing against `form.photoUrl` instead of using a
-  // boolean automatically "resets" the failure state when the user types a
-  // new URL — no useEffect needed, no stale DOM mutation.
-  const [erroredUrl, setErroredUrl] = useState<string | null>(null)
-  const showImage = !!form.photoUrl && erroredUrl !== form.photoUrl
+  const [preview, setPreview] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!pendingFile) {
+      setPreview(null)
+      return
+    }
+    const url = URL.createObjectURL(pendingFile)
+    setPreview(url)
+    return () => URL.revokeObjectURL(url)
+  }, [pendingFile])
 
   return (
     <div className="space-y-5">
       <p className="text-sm text-fg-2">
-        Paste a photo URL — uploads coming soon. We'll use this for the plant
-        card and detail hero.
+        Optional — add a photo to track visual growth from day one.
+        Upload it now and it'll appear in your plant&apos;s photo timeline.
       </p>
 
-      {/* Upload zone preview */}
-      <div className="flex flex-col items-center gap-4 rounded-lg border-2 border-dashed border-line-2 bg-bg-1 px-5 py-8 text-center">
-        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-accent-soft text-accent">
-          {showImage ? (
-            <ImageIcon className="h-7 w-7" />
-          ) : (
-            <Camera className="h-7 w-7" />
-          )}
-        </div>
-        {showImage ? (
-          <img
-            src={form.photoUrl}
-            alt="Plant preview"
-            className="max-h-40 w-full rounded-md object-cover"
-            onError={() => setErroredUrl(form.photoUrl)}
-          />
-        ) : (
-          <>
-            <p className="font-display text-base font-bold text-fg">Plant Photo</p>
-            <p className="text-sm text-fg-3 max-w-xs">
-              {form.photoUrl && erroredUrl === form.photoUrl
-                ? "We couldn't load that image. Double-check the URL."
-                : 'Optional. Add a link to track visual growth from day one.'}
-            </p>
-          </>
-        )}
-      </div>
+      <UploadZone
+        mode="defer"
+        onFileSelected={onFileSelected}
+        initialPreview={preview}
+      />
 
-      <div>
-        <label
-          htmlFor="photoUrl"
-          className="mb-2 block font-mono text-[11px] font-semibold uppercase tracking-eyebrow text-fg-2"
-        >
-          Photo URL
-        </label>
-        <input
-          id="photoUrl"
-          type="url"
-          value={form.photoUrl}
-          onChange={(e) => update('photoUrl', e.target.value)}
-          className="w-full rounded-md border border-line bg-bg-1 px-4 h-12 text-[15px] text-fg placeholder:text-fg-4 outline-none transition-colors focus:border-accent focus-visible:ring-2 focus-visible:ring-accent/40"
-          placeholder="https://..."
-        />
-        <p className="mt-2 text-xs text-fg-3">
-          Uploads coming soon — F4 wires direct upload to Cloudflare R2.
-        </p>
-      </div>
+      <p className="text-xs text-fg-3">
+        You can also add and generate photos from the plant detail page later.
+      </p>
     </div>
   )
 }

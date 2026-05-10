@@ -31,6 +31,7 @@ import { useCareLogs } from '@/lib/hooks/useCareLogs'
 import { useStrainTemplates } from '@/lib/hooks/useStrainTemplates'
 import { CareLogList } from '@/components/care-logs/CareLogList'
 import { LightCyclePill } from '@/components/plants/LightCyclePill'
+import { PhotoTimeline } from '@/components/plants/PhotoTimeline'
 import { Eyebrow, H1, H2, H3 } from '@/components/shell'
 import { deriveCareTag, CARE_TAG_TONE_CLASS } from '@/lib/careTag'
 import { getApiErrorToastMessage } from '@/lib/api/errors'
@@ -354,6 +355,9 @@ export default function PlantDetailPage() {
             <p className="whitespace-pre-wrap text-sm text-fg-2">{plant.notes}</p>
           </div>
         )}
+
+        {/* Photo Timeline (F4) */}
+        <PhotoTimeline plantId={plant.id} />
 
         {/* Care Logging */}
         <CareLogList plantId={plant.id} />
