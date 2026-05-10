@@ -12,6 +12,7 @@ import type {
   MeResponse,
   RegisterRequest,
   LoginRequest,
+  UpdateMeRequest,
 } from '@/types/auth'
 
 const API_BASE = '/api/auth'
@@ -85,6 +86,22 @@ export async function getMe(
 ): Promise<ApiResponse<MeResponse>> {
   return fetchApi<MeResponse>('/me', {
     method: 'GET',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  })
+}
+
+/**
+ * F2 — patch the current user (stageMode, prefs, etc).
+ */
+export async function updateMe(
+  accessToken: string,
+  data: UpdateMeRequest,
+): Promise<ApiResponse<MeResponse>> {
+  return fetchApi<MeResponse>('/me', {
+    method: 'PATCH',
+    body: JSON.stringify(data),
     headers: {
       Authorization: `Bearer ${accessToken}`,
     },

@@ -1,24 +1,44 @@
 /**
  * GrowLab StagePills
  *
- * Horizontal scrollable filter row for the Garden screen. Renders one
- * pill per growth stage plus a leading "All" pill. F1 always shows the
- * full 7-stage Expert set; the Basic/Expert toggle is deferred to F2
- * (Master Plan §3 / issue 003).
+ * Horizontal scrollable filter row for the Garden screen.
  *
- * Presentational only — selection state is owned by the parent.
+ * F2 (Master Plan §F2 / issue 003): the component is now reactive to a
+ * `stageMode` prop:
+ *   - `'expert'` (default, backward-compatible) renders the 7-stage
+ *     filter we shipped in F1.
+ *   - `'basic'` renders the 4 Basic buckets (seedling, veg, flower,
+ *     harvest) plus the leading "All" pill.
+ *
+ * Selection state is owned by the parent in BOTH modes — when the user
+ * toggles between Basic/Expert in Profile, the Garden pages decide
+ * whether to reset the active filter (e.g., basic 'flower' ≠ expert
+ * 'flowering' literally; reset is the safest default).
  */
 
 import {
   GROWTH_STAGE_CONFIG,
   type GrowthStage,
 } from '@/types/plants'
+import {
+  BASIC_STAGE_BUCKETS,
+  BASIC_STAGE_LABEL,
+  type BasicStage,
+} from '@/lib/stage-mapping'
+import type { StageMode } from '@/types/auth'
 
-/** Stage filter value — 'all' is the no-op filter. */
-export type StageFilter = GrowthStage | 'all'
+/**
+ * Filter values:
+ *   - Expert mode: `'all' | GrowthStage` (7 stages).
+ *   - Basic mode: `'all' | BasicStage` (4 buckets).
+ *
+ * Both share the leading `'all'` sentinel so consumers can keep one
+ * state slot and only re-narrow when they read the value.
+ */
+export type StageFilter = GrowthStage | BasicStage | 'all'
 
-/** Order shown to the user, matching `GROWTH_STAGES` from the schema. */
-const STAGE_ORDER: readonly GrowthStage[] = [
+/** Order shown to the user in Expert mode, matching `GROWTH_STAGES`. */
+const EXPERT_STAGE_ORDER: readonly GrowthStage[] = [
   'seedling',
   'vegetative',
   'flowering',
@@ -33,20 +53,42 @@ export interface StagePillsProps {
   onChange: (stage: StageFilter) => void
   /**
    * Optional per-stage counts (and an `all` total). When provided, each
-   * pill renders the count to the right of the label.
+   * pill renders the count to the right of the label. Keys must match
+   * the active mode's filter values.
    */
   counts?: Partial<Record<StageFilter, number>>
+  /**
+   * F2 — switches between Expert (7 stages) and Basic (4 buckets).
+   * Defaults to `'expert'` so callers that haven't been migrated keep
+   * the F1 behaviour.
+   */
+  stageMode?: StageMode
   className?: string
 }
 
-export function StagePills({ selected, onChange, counts, className }: StagePillsProps) {
-  const pills: { id: StageFilter; label: string }[] = [
-    { id: 'all', label: 'All' },
-    ...STAGE_ORDER.map((stage) => ({
-      id: stage,
-      label: GROWTH_STAGE_CONFIG[stage].label,
-    })),
-  ]
+export function StagePills({
+  selected,
+  onChange,
+  counts,
+  stageMode = 'expert',
+  className,
+}: StagePillsProps) {
+  const pills: { id: StageFilter; label: string }[] =
+    stageMode === 'basic'
+      ? [
+          { id: 'all', label: 'All' },
+          ...BASIC_STAGE_BUCKETS.map((bucket) => ({
+            id: bucket as StageFilter,
+            label: BASIC_STAGE_LABEL[bucket],
+          })),
+        ]
+      : [
+          { id: 'all', label: 'All' },
+          ...EXPERT_STAGE_ORDER.map((stage) => ({
+            id: stage as StageFilter,
+            label: GROWTH_STAGE_CONFIG[stage].label,
+          })),
+        ]
 
   return (
     <div

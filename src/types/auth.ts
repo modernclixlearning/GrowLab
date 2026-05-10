@@ -5,6 +5,31 @@
  */
 
 /**
+ * Stage mode toggle — Basic (4 buckets: Seedling / Veg / Flower / Harvest)
+ * vs Expert (7 stages: seedling / vegetative / flowering / harvesting /
+ * drying / curing / completed). Storage is always the 7-stage Expert model
+ * (issue 003 / N11); this flag is purely presentational.
+ */
+export type StageMode = 'basic' | 'expert'
+
+/**
+ * User unit preferences. Storage units are fixed (cm, C); UI converts.
+ */
+export interface UnitsPreference {
+  temp: 'C' | 'F'
+  length: 'cm' | 'in'
+}
+
+/**
+ * Notification channel toggles.
+ */
+export interface NotificationPrefs {
+  push: boolean
+  email: boolean
+  inApp: boolean
+}
+
+/**
  * User entity (public data, excludes passwordHash)
  */
 export interface User {
@@ -12,8 +37,29 @@ export interface User {
   email: string
   name: string | null
   subscriptionTier: 'free' | 'premium'
+  // F2 additions — backed by `users` schema in the DB.
+  stageMode: StageMode
+  unitsPreference: UnitsPreference | null
+  avatarUrl: string | null
+  notificationPrefs: NotificationPrefs | null
+  defaultTentId: string | null
+  hasOnboarded: boolean
   createdAt: string
   updatedAt: string
+}
+
+/**
+ * F2 — PATCH /api/auth/me payload. All fields optional; sending `null`
+ * clears the value where allowed.
+ */
+export interface UpdateMeRequest {
+  name?: string | null
+  stageMode?: StageMode
+  hasOnboarded?: boolean
+  avatarUrl?: string | null
+  defaultTentId?: string | null
+  unitsPreference?: UnitsPreference
+  notificationPrefs?: NotificationPrefs
 }
 
 /**

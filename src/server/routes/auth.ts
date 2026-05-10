@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
-import { loginSchema, registerSchema } from '../api/auth/schemas'
-import { login, register, logout, refresh, getCurrentUser } from '../api/auth/service'
+import { loginSchema, registerSchema, updateMeSchema } from '../api/auth/schemas'
+import { login, register, logout, refresh, getCurrentUser, updateCurrentUser } from '../api/auth/service'
 import { setRefreshTokenCookie, getRefreshTokenCookie, clearRefreshTokenCookie } from '../lib/cookies'
 import { verifyAccessToken } from '../lib/jwt'
 
@@ -102,6 +102,53 @@ authRoutes.get('/me', async (c) => {
     return c.json({ success: true, data: { user: result.data.user } })
   } catch (error) {
     console.error('Me error:', error)
+    return c.json({ success: false, error: { code: 'INTERNAL_ERROR', message: 'An unexpected error occurred' } }, 500)
+  }
+})
+
+/** PATCH /api/auth/me — F2 user prefs (stageMode, units, prefs, defaultTent) */
+authRoutes.patch('/me', async (c) => {
+  try {
+    const authHeader = c.req.header('Authorization')
+    if (!authHeader?.startsWith('Bearer ')) {
+      return c.json({ success: false, error: { code: 'MISSING_TOKEN', message: 'Authorization token required' } }, 401)
+    }
+
+    const token = authHeader.slice(7)
+    const payload = await verifyAccessToken(token)
+    if (!payload) {
+      return c.json({ success: false, error: { code: 'INVALID_TOKEN', message: 'Invalid or expired access token' } }, 401)
+    }
+
+    const body = await c.req.json()
+    const validation = updateMeSchema.safeParse(body)
+    if (!validation.success) {
+      const fieldErrors: Record<string, string> = {}
+      for (const error of validation.error.errors) {
+        fieldErrors[error.path.join('.')] = error.message
+      }
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Invalid input data',
+            fields: fieldErrors,
+          },
+        },
+        400,
+      )
+    }
+
+    const result = await updateCurrentUser(payload.userId, validation.data)
+    if (!result.success) {
+      const status = result.error.code === 'USER_NOT_FOUND' ? 404 : 403
+      return c.json({ success: false, error: result.error }, status)
+    }
+
+    return c.json({ success: true, data: { user: result.data.user } })
+  } catch (error) {
+    console.error('Update me error:', error)
     return c.json({ success: false, error: { code: 'INTERNAL_ERROR', message: 'An unexpected error occurred' } }, 500)
   }
 })

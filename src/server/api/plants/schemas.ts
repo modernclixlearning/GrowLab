@@ -8,6 +8,25 @@ import { z } from 'zod'
 import { GROWTH_STAGES, HEALTH_STATUSES, STRAIN_TYPES } from '@/server/db/schema/plants'
 
 /**
+ * Schema for `stage_duration_override` jsonb. Each key is optional and
+ * must be a positive integer day count when present. Reused by both
+ * create and update payloads.
+ */
+const stageDurationOverrideSchema = z
+  .object({
+    seedling: z.number().int().positive().optional(),
+    vegetative: z.number().int().positive().optional(),
+    flowering: z.number().int().positive().optional(),
+    harvesting: z.number().int().positive().optional(),
+    drying: z.number().int().positive().optional(),
+    curing: z.number().int().positive().optional(),
+  })
+  .strict()
+
+/** Light schedule string. Free-form but bounded; matches `tents.lightTarget`. */
+const lightScheduleSchema = z.string().min(1).max(20)
+
+/**
  * Create plant request validation schema
  */
 export const createPlantSchema = z.object({
@@ -27,6 +46,13 @@ export const createPlantSchema = z.object({
     .optional(),
   photoUrl: z.string().url('Photo URL must be a valid URL').optional(),
   notes: z.string().max(1000, 'Notes must be at most 1000 characters').optional(),
+  // F2 additions
+  tentId: z.string().min(1).optional(),
+  strainTemplateId: z.string().min(1).optional(),
+  strainName: z.string().min(1).max(100).optional(),
+  stageDurationOverride: stageDurationOverrideSchema.optional(),
+  lightSchedule: lightScheduleSchema.optional(),
+  heroPhotoUrl: z.string().url('Hero photo URL must be a valid URL').optional(),
 })
 
 /**
@@ -49,6 +75,13 @@ export const updatePlantSchema = z.object({
   }).optional(),
   photoUrl: z.string().url('Photo URL must be a valid URL').nullable().optional(),
   notes: z.string().max(1000, 'Notes must be at most 1000 characters').nullable().optional(),
+  // F2 additions — all nullable so user can clear
+  tentId: z.string().min(1).nullable().optional(),
+  strainTemplateId: z.string().min(1).nullable().optional(),
+  strainName: z.string().min(1).max(100).nullable().optional(),
+  stageDurationOverride: stageDurationOverrideSchema.nullable().optional(),
+  lightSchedule: lightScheduleSchema.nullable().optional(),
+  heroPhotoUrl: z.string().url('Hero photo URL must be a valid URL').nullable().optional(),
 })
 
 /**

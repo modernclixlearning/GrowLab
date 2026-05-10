@@ -45,7 +45,41 @@ export const refreshSchema = z.object({
   refreshToken: z.string().min(1, 'Refresh token is required'),
 })
 
+/**
+ * F2 — Update current user (PATCH /api/auth/me).
+ *
+ * All fields optional and validated independently. `name` accepts null so
+ * the user can clear it. `unitsPreference` and `notificationPrefs` are
+ * fully-typed JSON so a partial update has to send the whole object —
+ * keeps DB writes consistent without merging on the server.
+ */
+export const updateMeSchema = z.object({
+  name: z.string().min(1).max(100).nullable().optional(),
+  stageMode: z
+    .enum(['basic', 'expert'], {
+      errorMap: () => ({ message: 'stageMode must be "basic" or "expert"' }),
+    })
+    .optional(),
+  hasOnboarded: z.boolean().optional(),
+  avatarUrl: z.string().url('avatarUrl must be a valid URL').nullable().optional(),
+  defaultTentId: z.string().min(1).nullable().optional(),
+  unitsPreference: z
+    .object({
+      temp: z.enum(['C', 'F']),
+      length: z.enum(['cm', 'in']),
+    })
+    .optional(),
+  notificationPrefs: z
+    .object({
+      push: z.boolean(),
+      email: z.boolean(),
+      inApp: z.boolean(),
+    })
+    .optional(),
+})
+
 /** TypeScript types inferred from schemas */
 export type RegisterInput = z.infer<typeof registerSchema>
 export type LoginInput = z.infer<typeof loginSchema>
 export type RefreshInput = z.infer<typeof refreshSchema>
+export type UpdateMeInput = z.infer<typeof updateMeSchema>

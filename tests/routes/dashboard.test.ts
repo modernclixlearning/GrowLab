@@ -27,6 +27,16 @@ function makePlant(id: string, stage: GrowthStage, createdDaysAgo: number): Plan
     healthStatus: 'healthy',
     photoUrl: null,
     notes: null,
+    // F2 nullable defaults
+    tentId: null,
+    strainTemplateId: null,
+    strainName: null,
+    stageDurationOverride: null,
+    lightSchedule: null,
+    heroPhotoUrl: null,
+    weekDeltaCache: null,
+    weekOfStage: 1,
+    totalWeeks: null,
     createdAt: created.toISOString(),
     updatedAt: created.toISOString(),
   }

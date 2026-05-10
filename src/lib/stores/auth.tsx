@@ -28,6 +28,11 @@ interface AuthContextValue extends AuthState {
   register: (data: RegisterRequest) => Promise<{ success: boolean; error?: string }>
   logout: () => Promise<void>
   refreshSession: () => Promise<boolean>
+  /**
+   * Replace the cached user object after a `PATCH /me` so consumers see
+   * the new stageMode/prefs immediately. Used by `useUpdateMe`.
+   */
+  setUser: (user: User) => void
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -150,6 +155,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   )
 
   /**
+   * Replace the cached user (used after PATCH /me).
+   */
+  const setUser = useCallback((user: User) => {
+    setState((prev) => ({ ...prev, user }))
+  }, [])
+
+  /**
    * Logout and clear session
    */
   const logout = useCallback(async (): Promise<void> => {
@@ -170,6 +182,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         register,
         logout,
         refreshSession,
+        setUser,
       }}
     >
       {children}

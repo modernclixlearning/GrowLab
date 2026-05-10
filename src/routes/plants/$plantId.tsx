@@ -13,7 +13,7 @@
  * feedback (CLAUDE.md UI Feedback Standard).
  */
 
-import { useNavigate, useParams } from 'react-router-dom'
+import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import {
@@ -28,7 +28,9 @@ import {
 import { useAuth } from '@/lib/stores/auth'
 import { usePlant, useUpdatePlant, useDeletePlant } from '@/lib/hooks/usePlants'
 import { useCareLogs } from '@/lib/hooks/useCareLogs'
+import { useStrainTemplates } from '@/lib/hooks/useStrainTemplates'
 import { CareLogList } from '@/components/care-logs/CareLogList'
+import { LightCyclePill } from '@/components/plants/LightCyclePill'
 import { Eyebrow, H1, H2, H3 } from '@/components/shell'
 import { deriveCareTag, CARE_TAG_TONE_CLASS } from '@/lib/careTag'
 import { getApiErrorToastMessage } from '@/lib/api/errors'
@@ -79,8 +81,10 @@ const STAGE_ACCENT: Record<GrowthStage, { text: string; bg: string; ring: string
 export default function PlantDetailPage() {
   const navigate = useNavigate()
   const { plantId } = useParams<{ plantId: string }>()
-  const { isAuthenticated, isLoading: authLoading } = useAuth()
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth()
+  const stageMode = user?.stageMode ?? 'expert'
   const { data: plant, isLoading, error } = usePlant(plantId ?? '')
+  const { data: strainTemplatesData } = useStrainTemplates()
   // Narrow the careTag query to the single most recent water log — that's
   // all `deriveCareTag` actually needs. The full timeline is fetched
   // separately by `<CareLogList>` (different query key, different params),
@@ -95,10 +99,10 @@ export default function PlantDetailPage() {
   const deletePlant = useDeletePlant()
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
-  // Redirect to login if not authenticated
+  // Redirect to login without calling navigate() during render — using the
+  // <Navigate> element keeps the render pure.
   if (!authLoading && !isAuthenticated) {
-    navigate('/login')
-    return null
+    return <Navigate to="/login" replace />
   }
 
   if (authLoading || isLoading) {
@@ -138,11 +142,29 @@ export default function PlantDetailPage() {
   const strainConfig = STRAIN_TYPE_CONFIG[plant.strainType as StrainType]
   const daysInStage = daysSince(plant.stageStartDate)
   const totalAge = daysSince(plant.createdAt)
-  const weekOfStage = Math.max(1, Math.floor(daysInStage / 7) + 1)
+  // F2: weekOfStage now comes from the server, derived against the
+  // strain template's stageDurations (or override). Fallback to the
+  // same client formula keeps the UI working even if the API hasn't
+  // been redeployed yet.
+  const weekOfStage =
+    plant.weekOfStage ?? Math.max(1, Math.floor(daysInStage / 7) + 1)
+  const totalWeeks = plant.totalWeeks ?? null
   const nextStage = NEXT_STAGE[plant.growthStage]
   const stageAccent = STAGE_ACCENT[stage] ?? STAGE_ACCENT.completed
   const careTag = careLogsData ? deriveCareTag(careLogsData.careLogs) : null
   const idShort = plant.id.slice(0, 4).toUpperCase()
+
+  // F2: prefer named strain (template > free-form > strainType label).
+  const strainTemplate = plant.strainTemplateId
+    ? strainTemplatesData?.strainTemplates.find(
+        (t) => t.id === plant.strainTemplateId,
+      ) ?? null
+    : null
+  const displayStrain =
+    strainTemplate?.name ??
+    plant.strainName ??
+    strainConfig?.label ??
+    plant.strainType
 
   const handleAdvanceStage = async () => {
     if (!nextStage) return
@@ -218,6 +240,9 @@ export default function PlantDetailPage() {
           <p className="mt-2 font-mono text-[11px] uppercase tracking-eyebrow text-fg-3">
             ID · GL-{idShort} · PLANTED {formatDate(plant.createdAt)}
           </p>
+          <p className="mt-1 font-mono text-[11px] uppercase tracking-eyebrow text-fg-3">
+            {displayStrain.toUpperCase()}
+          </p>
         </div>
 
         {/* Placeholder when no photo */}
@@ -238,7 +263,11 @@ export default function PlantDetailPage() {
           />
           <StatTile
             icon={<Clock className="h-5 w-5" />}
-            value={`Week ${weekOfStage}`}
+            value={
+              totalWeeks
+                ? `Week ${weekOfStage}/${totalWeeks}`
+                : `Week ${weekOfStage}`
+            }
             label={stageConfig?.label ?? stage}
             tone={stageAccent.text}
           />
@@ -249,6 +278,16 @@ export default function PlantDetailPage() {
             tone={healthConfig?.color ?? 'text-fg-3'}
           />
         </div>
+
+        {/* F2 — Light cycle pill (Expert-only, hidden when null). */}
+        {plant.lightSchedule && stageMode === 'expert' && (
+          <div>
+            <LightCyclePill
+              lightSchedule={plant.lightSchedule}
+              stageMode={stageMode}
+            />
+          </div>
+        )}
 
         {/* CareTag (derived from care logs) */}
         {careTag && (
@@ -298,7 +337,10 @@ export default function PlantDetailPage() {
         <div className="rounded-lg border border-line bg-card p-4">
           <Eyebrow tone="muted" className="mb-3 block">Details</Eyebrow>
           <dl className="space-y-3">
-            <DetailRow term="Strain" value={strainConfig?.label ?? plant.strainType} />
+            <DetailRow term="Strain" value={displayStrain} />
+            {plant.strainTemplateId && (
+              <DetailRow term="Strain Type" value={strainConfig?.label ?? plant.strainType} />
+            )}
             <DetailRow term="Stage Start" value={formatDate(plant.stageStartDate)} />
             <DetailRow term="Days in Stage" value={`${daysInStage}d`} />
             <DetailRow term="Last Updated" value={formatDate(plant.updatedAt)} />

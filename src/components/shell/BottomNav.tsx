@@ -31,8 +31,9 @@ const ITEMS: NavItem[] = [
   { key: 'garden', label: 'Garden', icon: LayoutGrid, to: '/garden' },
   { key: 'dashboard', label: 'Dashboard', icon: BarChart3, to: '/dashboard' },
   // FAB sits between dashboard and schedule (rendered separately).
+  // Schedule lands in F3; Profile is wired in F2.
   { key: 'schedule', label: 'Schedule', icon: Calendar, to: undefined },
-  { key: 'profile', label: 'Profile', icon: User, to: undefined },
+  { key: 'profile', label: 'Profile', icon: User, to: '/profile' },
 ]
 
 export interface BottomNavProps {
