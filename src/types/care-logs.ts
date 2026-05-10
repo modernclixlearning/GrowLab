@@ -1,8 +1,12 @@
 /**
  * GrowLab - Frontend Types for Care Logs
- * 
+ *
  * TypeScript types matching backend API responses for care logging.
+ * F3: adds scheduling fields (scheduledAt, completedAt, recurrenceRule,
+ *     parentScheduleId) and related request/response types.
  */
+
+import type { RecurrenceRule } from '@/lib/recurrence'
 
 /**
  * Care log type values
@@ -20,6 +24,11 @@ export interface CareLog {
   unit: string | null
   notes: string | null
   loggedAt: string
+  // F3 scheduling fields
+  scheduledAt: string | null
+  completedAt: string | null
+  recurrenceRule: RecurrenceRule | null
+  parentScheduleId: string | null
 }
 
 /**
@@ -31,6 +40,9 @@ export interface CreateCareLogRequest {
   unit?: string
   notes?: string
   loggedAt?: string
+  // F3
+  scheduledAt?: string
+  recurrenceRule?: RecurrenceRule
 }
 
 export interface ListCareLogsParams {
@@ -38,6 +50,13 @@ export interface ListCareLogsParams {
   sortOrder?: 'asc' | 'desc'
   limit?: number
   offset?: number
+}
+
+/** F3 — query params for the cross-plant scheduled window endpoint */
+export interface ListScheduledCareLogsParams {
+  plantId?: string
+  scheduledFrom?: string
+  scheduledTo?: string
 }
 
 /**
@@ -50,6 +69,12 @@ export interface CareLogResponse {
 export interface CareLogsListResponse {
   careLogs: CareLog[]
   total: number
+}
+
+/** F3 — response from POST /api/care-logs/:id/complete */
+export interface CompleteCareLogResponse {
+  careLog: CareLog
+  next: CareLog | null
 }
 
 /**

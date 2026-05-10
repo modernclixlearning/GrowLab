@@ -6,6 +6,7 @@ import { authRoutes } from './routes/auth'
 import { plantsRoutes } from './routes/plants'
 import { tentsRoutes } from './routes/tents'
 import { strainTemplatesRoutes } from './routes/strain-templates'
+import { careLogsRoutes } from './routes/care-logs'
 
 const app = new Hono()
 
@@ -25,6 +26,7 @@ app.route('/api/auth', authRoutes)
 app.route('/api/plants', plantsRoutes)
 app.route('/api/tents', tentsRoutes)
 app.route('/api/strain-templates', strainTemplatesRoutes)
+app.route('/api/care-logs', careLogsRoutes)
 
 // Serve static frontend files in production
 if (process.env.NODE_ENV === 'production') {
