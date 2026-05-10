@@ -20,7 +20,19 @@ export type HealthStatus = 'healthy' | 'stressed' | 'sick' | 'recovering' | 'dea
 export type StrainType = 'indica' | 'sativa' | 'hybrid' | 'auto'
 
 /**
- * Plant entity (matches server Plant type)
+ * Per-stage duration overrides (days). All keys optional.
+ */
+export interface PlantStageDurationOverride {
+  seedling?: number
+  vegetative?: number
+  flowering?: number
+  harvesting?: number
+  drying?: number
+  curing?: number
+}
+
+/**
+ * Plant entity (matches server ApiPlant type — base columns + derived stats)
  */
 export interface Plant {
   id: string
@@ -32,6 +44,17 @@ export interface Plant {
   healthStatus: HealthStatus
   photoUrl: string | null
   notes: string | null
+  // F2 additions
+  tentId: string | null
+  strainTemplateId: string | null
+  strainName: string | null
+  stageDurationOverride: PlantStageDurationOverride | null
+  lightSchedule: string | null
+  heroPhotoUrl: string | null
+  weekDeltaCache: string | null
+  // Derived on the server (Master Plan §F2.12)
+  weekOfStage: number
+  totalWeeks: number | null
   createdAt: string
   updatedAt: string
 }
@@ -46,6 +69,13 @@ export interface CreatePlantRequest {
   stageStartDate?: string
   photoUrl?: string
   notes?: string
+  // F2 additions
+  tentId?: string
+  strainTemplateId?: string
+  strainName?: string
+  stageDurationOverride?: PlantStageDurationOverride
+  lightSchedule?: string
+  heroPhotoUrl?: string
 }
 
 export interface UpdatePlantRequest {
@@ -55,6 +85,13 @@ export interface UpdatePlantRequest {
   healthStatus?: HealthStatus
   photoUrl?: string | null
   notes?: string | null
+  // F2 additions — null clears
+  tentId?: string | null
+  strainTemplateId?: string | null
+  strainName?: string | null
+  stageDurationOverride?: PlantStageDurationOverride | null
+  lightSchedule?: string | null
+  heroPhotoUrl?: string | null
 }
 
 export interface ListPlantsParams {

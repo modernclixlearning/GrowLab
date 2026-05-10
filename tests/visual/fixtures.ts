@@ -19,8 +19,46 @@ export interface MockUser {
   id: string
   email: string
   name: string | null
+  /** F2 — defaults to 'expert' so existing goldens keep their 7-stage pills. */
+  stageMode?: 'basic' | 'expert'
+  /** F2 — `false` shows the StageMode onboarding overlay; defaults `true`. */
+  hasOnboarded?: boolean
+  /** F2 — null means no avatar (Profile shows placeholder). */
+  avatarUrl?: string | null
+  /** F2 — see types/auth UnitsPreference. */
+  unitsPreference?: { temp: 'C' | 'F'; length: 'cm' | 'in' } | null
+  /** F2 — notification channel toggles. */
+  notificationPrefs?: {
+    push: boolean
+    email: boolean
+    inApp: boolean
+  } | null
+  /** F2 — default tent id (or null). */
+  defaultTentId?: string | null
   createdAt: string
   updatedAt: string
+}
+
+export interface MockTent {
+  id: string
+  userId: string
+  name: string
+  lightTarget: string | null
+  humidityTargetPct: string | null
+  tempTargetC: string | null
+  notes: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface MockStrainTemplate {
+  id: string
+  name: string
+  strainType: 'indica' | 'sativa' | 'hybrid' | 'auto'
+  stageDurations: Record<string, number> | null
+  defaultLightSchedule: { veg?: string; flower?: string } | null
+  description: string | null
+  createdAt: string
 }
 
 export interface MockPlant {
@@ -40,6 +78,17 @@ export interface MockPlant {
   healthStatus: 'healthy' | 'stressed' | 'sick' | 'recovering' | 'dead'
   photoUrl: string | null
   notes: string | null
+  // F2 — all optional in fixtures; mock helper fills defaults.
+  tentId?: string | null
+  strainTemplateId?: string | null
+  strainName?: string | null
+  stageDurationOverride?: Record<string, number> | null
+  lightSchedule?: string | null
+  heroPhotoUrl?: string | null
+  weekDeltaCache?: string | null
+  /** Server-derived. Defaulted by the mock helper if not set. */
+  weekOfStage?: number
+  totalWeeks?: number | null
   createdAt: string
   updatedAt: string
 }
@@ -58,6 +107,12 @@ export const FIXED_USER: MockUser = {
   id: 'user-1',
   email: 'grower@growlab.test',
   name: 'Jane Grower',
+  stageMode: 'expert',
+  hasOnboarded: true,
+  avatarUrl: null,
+  unitsPreference: { temp: 'C', length: 'cm' },
+  notificationPrefs: { push: true, email: true, inApp: true },
+  defaultTentId: null,
   createdAt: '2026-01-01T00:00:00.000Z',
   updatedAt: '2026-01-01T00:00:00.000Z',
 }
@@ -180,6 +235,35 @@ interface MockOptions {
   careLogsByPlant?: Record<string, MockCareLog[]>
   /** Override authenticated user (default: `FIXED_USER`). */
   user?: MockUser | null
+  /** Tents returned by `GET /api/tents`. Default empty. (F2) */
+  tents?: MockTent[]
+  /** Strain templates returned by `GET /api/strain-templates`. Default empty. (F2) */
+  strainTemplates?: MockStrainTemplate[]
+}
+
+/**
+ * Fill F2-derived plant fields the server normally computes (`weekOfStage`,
+ * `totalWeeks`) so fixture-only tests don't have to set them every time.
+ * Caller may still override by setting them explicitly on a MockPlant.
+ */
+function withDerivedStats(plant: MockPlant): MockPlant {
+  if (typeof plant.weekOfStage === 'number') return plant
+  // Default: 1-indexed week from stageStartDate. Mirrors the server helper.
+  const start = new Date(plant.stageStartDate).getTime()
+  const now = new Date(FIXED_NOW).getTime()
+  const elapsedDays = Math.max(0, (now - start) / (1000 * 60 * 60 * 24))
+  return {
+    ...plant,
+    weekOfStage: Math.floor(elapsedDays / 7) + 1,
+    totalWeeks: plant.totalWeeks ?? null,
+    tentId: plant.tentId ?? null,
+    strainTemplateId: plant.strainTemplateId ?? null,
+    strainName: plant.strainName ?? null,
+    stageDurationOverride: plant.stageDurationOverride ?? null,
+    lightSchedule: plant.lightSchedule ?? null,
+    heroPhotoUrl: plant.heroPhotoUrl ?? null,
+    weekDeltaCache: plant.weekDeltaCache ?? null,
+  }
 }
 
 /**
@@ -189,9 +273,14 @@ interface MockOptions {
  * actually call. Anything else returns a 404 to surface drift loudly in CI.
  */
 export async function mockGrowlabApi(page: Page, opts: MockOptions = {}) {
-  const plants = opts.plants ?? []
+  const plants = (opts.plants ?? []).map(withDerivedStats)
   const careLogsByPlant = opts.careLogsByPlant ?? {}
-  const user = opts.user === undefined ? FIXED_USER : opts.user
+  const initialUser = opts.user === undefined ? FIXED_USER : opts.user
+  // Mutable so PATCH /api/auth/me can update what subsequent GET /me returns
+  // within the same test (e.g. onboarding completion → user.hasOnboarded=true).
+  let user: MockUser | null = initialUser
+  const tents = opts.tents ?? []
+  const strainTemplates = opts.strainTemplates ?? []
   const accessToken = 'test-access-token'
 
   // Pin clock so relative dates ("3h ago") are deterministic.
@@ -273,6 +362,49 @@ export async function mockGrowlabApi(page: Page, opts: MockOptions = {}) {
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify(ok({ message: 'logged out' })),
+      })
+    }
+
+    // PATCH /api/auth/me — apply the body diff to our local user copy
+    // so subsequent /me reads reflect the change. Used by Profile toggle
+    // and onboarding overlay tests.
+    if (pathname === '/api/auth/me' && request.method() === 'PATCH') {
+      if (!user) {
+        return route.fulfill({
+          status: 401,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            success: false,
+            error: { code: 'UNAUTHORIZED', message: 'Not authenticated' },
+          }),
+        })
+      }
+      const body = request.postDataJSON() as Partial<MockUser>
+      user = { ...user, ...body }
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(ok({ user })),
+      })
+    }
+
+    // Tents — list (F2)
+    if (pathname === '/api/tents' && request.method() === 'GET') {
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(ok({ tents, total: tents.length })),
+      })
+    }
+
+    // Strain templates — list (F2)
+    if (pathname === '/api/strain-templates' && request.method() === 'GET') {
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(
+          ok({ strainTemplates, total: strainTemplates.length }),
+        ),
       })
     }
 
