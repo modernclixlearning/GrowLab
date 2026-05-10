@@ -5,10 +5,27 @@
  * Handles CRUD, ownership verification, and growth stage validation.
  */
 
-import { eq, and, ilike, asc, desc, sql, count } from 'drizzle-orm'
+import { eq, and, ilike, asc, desc, sql, count, inArray } from 'drizzle-orm'
 import { db } from '@/server/db'
-import { plants, type Plant, GROWTH_STAGES, type GrowthStage } from '@/server/db/schema'
+import {
+  plants,
+  type Plant,
+  GROWTH_STAGES,
+  type GrowthStage,
+  strainTemplates,
+  tents,
+} from '@/server/db/schema'
 import type { CreatePlantInput, UpdatePlantInput, ListPlantsQuery } from './schemas'
+import {
+  derivePlantStats,
+  type DerivedPlantStats,
+} from '@/server/lib/derivePlantStats'
+
+/**
+ * Plant returned by the API — base columns plus the server-derived
+ * `weekOfStage` and `totalWeeks` (issue 003 / Master Plan §F2.12).
+ */
+export type ApiPlant = Plant & DerivedPlantStats
 
 /**
  * Error codes for plant operations
@@ -53,6 +70,82 @@ function isValidStageTransition(currentStage: string, newStage: string): boolean
 }
 
 /**
+ * Enrich a Plant row with the derived weekOfStage / totalWeeks tuple.
+ * Looks up the strain template (if any) so the durations cascade
+ * `override → template → null` works without forcing every caller to
+ * preload the template.
+ */
+async function enrichPlant(plant: Plant): Promise<ApiPlant> {
+  let templateDurations: ApiPlant['stageDurationOverride'] | null = null
+  if (plant.strainTemplateId) {
+    const template = await db.query.strainTemplates.findFirst({
+      where: eq(strainTemplates.id, plant.strainTemplateId),
+      columns: { stageDurations: true },
+    })
+    templateDurations = template?.stageDurations ?? null
+  }
+
+  const stats = derivePlantStats({
+    growthStage: plant.growthStage as GrowthStage,
+    stageStartDate: plant.stageStartDate,
+    stageDurationOverride: plant.stageDurationOverride,
+    templateStageDurations: templateDurations,
+  })
+
+  return { ...plant, ...stats }
+}
+
+/**
+ * Batch-enrich a list of plants in a single round-trip for the templates.
+ * Avoids N+1 queries when listing the garden.
+ */
+async function enrichPlants(rows: Plant[]): Promise<ApiPlant[]> {
+  if (rows.length === 0) return []
+
+  const templateIds = Array.from(
+    new Set(rows.map((p) => p.strainTemplateId).filter((id): id is string => !!id)),
+  )
+
+  const templates = templateIds.length
+    ? await db
+        .select({
+          id: strainTemplates.id,
+          stageDurations: strainTemplates.stageDurations,
+        })
+        .from(strainTemplates)
+        .where(inArray(strainTemplates.id, templateIds))
+    : []
+
+  const byId = new Map(templates.map((t) => [t.id, t.stageDurations]))
+
+  return rows.map((p) => {
+    const template = p.strainTemplateId ? byId.get(p.strainTemplateId) : null
+    const stats = derivePlantStats({
+      growthStage: p.growthStage as GrowthStage,
+      stageStartDate: p.stageStartDate,
+      stageDurationOverride: p.stageDurationOverride,
+      templateStageDurations: template ?? null,
+    })
+    return { ...p, ...stats }
+  })
+}
+
+/**
+ * Verify a tent belongs to the user. Used during plant create/update
+ * before linking `tentId`. Returns boolean — callers map to API error.
+ */
+async function verifyTentOwnership(
+  tentId: string,
+  userId: string,
+): Promise<boolean> {
+  const tent = await db.query.tents.findFirst({
+    where: eq(tents.id, tentId),
+    columns: { id: true, userId: true },
+  })
+  return !!tent && tent.userId === userId
+}
+
+/**
  * Get a plant by ID and verify ownership
  */
 async function findPlantByIdAndOwner(
@@ -92,7 +185,7 @@ async function findPlantByIdAndOwner(
 export async function listPlants(
   userId: string,
   query: ListPlantsQuery
-): Promise<PlantResult<{ plants: Plant[]; total: number }>> {
+): Promise<PlantResult<{ plants: ApiPlant[]; total: number }>> {
   const { stage, search, sortBy, sortOrder, limit, offset } = query
 
   // Build where conditions
@@ -135,10 +228,12 @@ export async function listPlants(
       .where(whereClause),
   ])
 
+  const enriched = await enrichPlants(plantsList)
+
   return {
     success: true,
     data: {
-      plants: plantsList,
+      plants: enriched,
       total: countResult.count,
     },
   }
@@ -150,8 +245,11 @@ export async function listPlants(
 export async function getPlant(
   plantId: string,
   userId: string
-): Promise<PlantResult<{ plant: Plant }>> {
-  return findPlantByIdAndOwner(plantId, userId)
+): Promise<PlantResult<{ plant: ApiPlant }>> {
+  const result = await findPlantByIdAndOwner(plantId, userId)
+  if (!result.success) return result
+  const enriched = await enrichPlant(result.data.plant)
+  return { success: true, data: { plant: enriched } }
 }
 
 /**
@@ -161,7 +259,7 @@ export async function createPlant(
   userId: string,
   subscriptionTier: string,
   input: CreatePlantInput
-): Promise<PlantResult<{ plant: Plant }>> {
+): Promise<PlantResult<{ plant: ApiPlant }>> {
   // Check plant limit for free tier
   if (subscriptionTier === 'free') {
     const [countResult] = await db
@@ -186,6 +284,20 @@ export async function createPlant(
     }
   }
 
+  // F2: ownership check on tent if provided.
+  if (input.tentId) {
+    const ok = await verifyTentOwnership(input.tentId, userId)
+    if (!ok) {
+      return {
+        success: false,
+        error: {
+          code: 'TENT_FORBIDDEN',
+          message: 'Tent does not belong to this user',
+        },
+      }
+    }
+  }
+
   const now = new Date()
   const stageStartDate = input.stageStartDate
     ? new Date(input.stageStartDate)
@@ -202,14 +314,22 @@ export async function createPlant(
       healthStatus: 'healthy',
       photoUrl: input.photoUrl ?? null,
       notes: input.notes ?? null,
+      // F2 fields — null when caller omits.
+      tentId: input.tentId ?? null,
+      strainTemplateId: input.strainTemplateId ?? null,
+      strainName: input.strainName ?? null,
+      stageDurationOverride: input.stageDurationOverride ?? null,
+      lightSchedule: input.lightSchedule ?? null,
+      heroPhotoUrl: input.heroPhotoUrl ?? null,
       createdAt: now,
       updatedAt: now,
     })
     .returning()
 
+  const enriched = await enrichPlant(createdPlant)
   return {
     success: true,
-    data: { plant: createdPlant },
+    data: { plant: enriched },
   }
 }
 
@@ -220,7 +340,7 @@ export async function updatePlant(
   plantId: string,
   userId: string,
   input: UpdatePlantInput
-): Promise<PlantResult<{ plant: Plant }>> {
+): Promise<PlantResult<{ plant: ApiPlant }>> {
   // Verify ownership
   const findResult = await findPlantByIdAndOwner(plantId, userId)
   if (!findResult.success) return findResult
@@ -242,6 +362,20 @@ export async function updatePlant(
     }
   }
 
+  // F2: ownership check on tent (when set to a non-null id)
+  if (input.tentId) {
+    const ok = await verifyTentOwnership(input.tentId, userId)
+    if (!ok) {
+      return {
+        success: false,
+        error: {
+          code: 'TENT_FORBIDDEN',
+          message: 'Tent does not belong to this user',
+        },
+      }
+    }
+  }
+
   // Build update values
   const updateValues: Record<string, unknown> = {
     updatedAt: new Date(),
@@ -252,6 +386,13 @@ export async function updatePlant(
   if (input.healthStatus !== undefined) updateValues.healthStatus = input.healthStatus
   if (input.photoUrl !== undefined) updateValues.photoUrl = input.photoUrl
   if (input.notes !== undefined) updateValues.notes = input.notes
+  // F2 fields
+  if (input.tentId !== undefined) updateValues.tentId = input.tentId
+  if (input.strainTemplateId !== undefined) updateValues.strainTemplateId = input.strainTemplateId
+  if (input.strainName !== undefined) updateValues.strainName = input.strainName
+  if (input.stageDurationOverride !== undefined) updateValues.stageDurationOverride = input.stageDurationOverride
+  if (input.lightSchedule !== undefined) updateValues.lightSchedule = input.lightSchedule
+  if (input.heroPhotoUrl !== undefined) updateValues.heroPhotoUrl = input.heroPhotoUrl
 
   // If growth stage changed, update stage start date too
   if (input.growthStage && input.growthStage !== existingPlant.growthStage) {
@@ -265,9 +406,10 @@ export async function updatePlant(
     .where(eq(plants.id, plantId))
     .returning()
 
+  const enriched = await enrichPlant(updatedPlant)
   return {
     success: true,
-    data: { plant: updatedPlant },
+    data: { plant: enriched },
   }
 }
 

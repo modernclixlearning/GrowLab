@@ -45,7 +45,10 @@ plantsRoutes.post('/', async (c) => {
     }
 
     const result = await createPlant(auth.user.userId, auth.user.subscriptionTier, validation.data)
-    if (!result.success) return c.json({ success: false, error: result.error }, 400)
+    if (!result.success) {
+      const status = result.error.code === 'TENT_FORBIDDEN' ? 403 : 400
+      return c.json({ success: false, error: result.error }, status as never)
+    }
     return c.json({ success: true, data: { plant: result.data.plant } }, 201)
   } catch (error) {
     console.error('Create plant error:', error)
@@ -87,7 +90,12 @@ plantsRoutes.patch('/:plantId', async (c) => {
 
     const result = await updatePlant(c.req.param('plantId'), auth.user.userId, validation.data)
     if (!result.success) {
-      const statusMap: Record<string, number> = { PLANT_NOT_FOUND: 404, PLANT_FORBIDDEN: 403, INVALID_STAGE_TRANSITION: 422 }
+      const statusMap: Record<string, number> = {
+        PLANT_NOT_FOUND: 404,
+        PLANT_FORBIDDEN: 403,
+        TENT_FORBIDDEN: 403,
+        INVALID_STAGE_TRANSITION: 422,
+      }
       return c.json({ success: false, error: result.error }, (statusMap[result.error.code] ?? 400) as never)
     }
     return c.json({ success: true, data: { plant: result.data.plant } })
