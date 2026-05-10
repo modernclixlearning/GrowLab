@@ -15,7 +15,7 @@ import {
   verifyRefreshToken,
   REFRESH_TOKEN_EXPIRY_MS,
 } from '@/server/lib/jwt'
-import type { RegisterInput, LoginInput } from './schemas'
+import type { RegisterInput, LoginInput, UpdateMeInput } from './schemas'
 
 /**
  * Error codes for auth operations
@@ -298,7 +298,7 @@ export async function logout(
 
 /**
  * Get current authenticated user by ID
- * 
+ *
  * @param userId - User ID from access token
  * @returns User data or error
  */
@@ -322,5 +322,68 @@ export async function getCurrentUser(
   return {
     success: true,
     data: { user: toPublicUser(user) },
+  }
+}
+
+/**
+ * F2 — Patch the current user. Only the fields explicitly present on
+ * `input` are written; the rest stay untouched.
+ *
+ * `defaultTentId` is intentionally NOT validated against ownership here —
+ * that belongs to a tents-aware layer. We rely on the FK constraint
+ * (`set null` on tent delete) plus the API client knowing not to send
+ * stale ids. If you set a tentId you don't own, the FK lookup just
+ * succeeds (FK doesn't check ownership) so we add an explicit ownership
+ * check before applying the update.
+ */
+export async function updateCurrentUser(
+  userId: string,
+  input: UpdateMeInput,
+): Promise<AuthResult<{ user: PublicUser }>> {
+  // Ownership check on `defaultTentId` if provided.
+  if (input.defaultTentId !== undefined && input.defaultTentId !== null) {
+    const { tents } = await import('@/server/db/schema')
+    const tent = await db.query.tents.findFirst({
+      where: eq(tents.id, input.defaultTentId),
+    })
+    if (!tent || tent.userId !== userId) {
+      return {
+        success: false,
+        error: {
+          code: 'TENT_FORBIDDEN',
+          message: 'Default tent does not belong to this user',
+        },
+      }
+    }
+  }
+
+  const updateValues: Record<string, unknown> = { updatedAt: new Date() }
+  if (input.name !== undefined) updateValues.name = input.name
+  if (input.stageMode !== undefined) updateValues.stageMode = input.stageMode
+  if (input.hasOnboarded !== undefined) updateValues.hasOnboarded = input.hasOnboarded
+  if (input.avatarUrl !== undefined) updateValues.avatarUrl = input.avatarUrl
+  if (input.defaultTentId !== undefined) updateValues.defaultTentId = input.defaultTentId
+  if (input.unitsPreference !== undefined) updateValues.unitsPreference = input.unitsPreference
+  if (input.notificationPrefs !== undefined) updateValues.notificationPrefs = input.notificationPrefs
+
+  const [updated] = await db
+    .update(users)
+    .set(updateValues)
+    .where(eq(users.id, userId))
+    .returning()
+
+  if (!updated) {
+    return {
+      success: false,
+      error: {
+        code: AuthErrorCodes.USER_NOT_FOUND,
+        message: 'User not found',
+      },
+    }
+  }
+
+  return {
+    success: true,
+    data: { user: toPublicUser(updated) },
   }
 }
