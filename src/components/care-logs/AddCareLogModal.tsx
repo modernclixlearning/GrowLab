@@ -3,14 +3,19 @@
  *
  * Modal form for logging a new care activity (water, feed, prune, etc.)
  * on a specific plant.
+ * F3: adds scheduledAt datetime input + RecurrenceForm section.
  */
 
 import { useState } from 'react'
 import { X } from 'lucide-react'
+import { toast } from 'sonner'
 import { useCreateCareLog } from '@/lib/hooks/useCareLogs'
+import { getApiErrorToastMessage } from '@/lib/api/errors'
 import { CARE_LOG_TYPE_CONFIG } from '@/types/care-logs'
 import { H3 } from '@/components/shell'
 import type { CareLogType, CreateCareLogRequest } from '@/types/care-logs'
+import type { RecurrenceRule } from '@/lib/recurrence'
+import { RecurrenceForm } from './RecurrenceForm'
 
 const LOG_TYPES: CareLogType[] = ['water', 'feed', 'prune', 'transplant', 'train', 'other']
 
@@ -31,15 +36,15 @@ export function AddCareLogModal({ plantId, onClose, defaultLogType }: AddCareLog
   const [amount, setAmount] = useState('')
   const [unit, setUnit] = useState('')
   const [notes, setNotes] = useState('')
+  const [scheduledAt, setScheduledAt] = useState('')
+  const [recurrenceRule, setRecurrenceRule] = useState<RecurrenceRule | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
 
-    const data: CreateCareLogRequest = {
-      logType,
-    }
+    const data: CreateCareLogRequest = { logType }
 
     if (amount) {
       const parsedAmount = parseFloat(amount)
@@ -50,19 +55,25 @@ export function AddCareLogModal({ plantId, onClose, defaultLogType }: AddCareLog
       data.amount = parsedAmount
     }
 
-    if (unit.trim()) {
-      data.unit = unit.trim()
-    }
+    if (unit.trim()) data.unit = unit.trim()
+    if (notes.trim()) data.notes = notes.trim()
 
-    if (notes.trim()) {
-      data.notes = notes.trim()
+    // F3 scheduling fields
+    if (scheduledAt) {
+      data.scheduledAt = new Date(scheduledAt).toISOString()
+    }
+    if (recurrenceRule) {
+      data.recurrenceRule = recurrenceRule
     }
 
     try {
       await createCareLog.mutateAsync(data)
+      toast.success('Care activity logged')
       onClose()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to log care event')
+      const message = getApiErrorToastMessage(err, 'Failed to log care event')
+      toast.error(message)
+      setError(message)
     }
   }
 
@@ -166,6 +177,23 @@ export function AddCareLogModal({ plantId, onClose, defaultLogType }: AddCareLog
               maxLength={1000}
             />
           </div>
+
+          {/* F3 — Schedule section */}
+          <div>
+            <label htmlFor="scheduled-at" className={labelClasses}>
+              Schedule for <span className="text-fg-4">(optional)</span>
+            </label>
+            <input
+              id="scheduled-at"
+              type="datetime-local"
+              value={scheduledAt}
+              onChange={(e) => setScheduledAt(e.target.value)}
+              className={inputClasses}
+            />
+          </div>
+
+          {/* F3 — Recurrence */}
+          <RecurrenceForm value={recurrenceRule} onChange={setRecurrenceRule} />
 
           {/* Error */}
           {error && (
