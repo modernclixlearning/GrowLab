@@ -4,6 +4,8 @@ import { cors } from 'hono/cors'
 import { serveStatic } from '@hono/node-server/serve-static'
 import { authRoutes } from './routes/auth'
 import { plantsRoutes } from './routes/plants'
+import { tentsRoutes } from './routes/tents'
+import { strainTemplatesRoutes } from './routes/strain-templates'
 
 const app = new Hono()
 
@@ -21,6 +23,8 @@ app.use(
 // API routes
 app.route('/api/auth', authRoutes)
 app.route('/api/plants', plantsRoutes)
+app.route('/api/tents', tentsRoutes)
+app.route('/api/strain-templates', strainTemplatesRoutes)
 
 // Serve static frontend files in production
 if (process.env.NODE_ENV === 'production') {
