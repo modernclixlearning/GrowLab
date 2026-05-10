@@ -118,7 +118,7 @@ async function reuploadToR2(
 export async function generateAiImage(
   input: GenerateImageInput,
   userId: string,
-  subscriptionTier: string,
+  stageMode: string,
 ): Promise<AiResult<{ photo: { id: string; url: string; stage: string; sourceType: string } }>> {
   const ownership = await verifyPlantOwnership(input.plantId, userId)
   if (!ownership.ok) {
@@ -131,7 +131,7 @@ export async function generateAiImage(
 
   // Quota check
   const used  = await countAiPhotos(input.plantId)
-  const quota = aiQuota(subscriptionTier)
+  const quota = aiQuota(stageMode)
   if (used >= quota) {
     return {
       success: false,
@@ -190,12 +190,7 @@ export async function generateAiImage(
   return {
     success: true,
     data: {
-      photo: {
-        id:         saveResult.data.photo.id,
-        url:        publicUrl,
-        stage:      input.stage,
-        sourceType: 'ai',
-      },
+      photo: saveResult.data.photo,
     },
   }
 }

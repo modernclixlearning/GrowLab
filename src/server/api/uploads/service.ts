@@ -73,9 +73,15 @@ export interface PresignedUrlResult {
 export async function generatePresignedUrl(
   input: PresignedUrlInput,
   userId: string,
-  subscriptionTier: string,
+  stageMode: string,
 ): Promise<UploadResult<PresignedUrlResult>> {
-  if (!process.env.R2_ENDPOINT || !process.env.R2_BUCKET_NAME) {
+  if (
+    !process.env.R2_ENDPOINT ||
+    !process.env.R2_BUCKET_NAME ||
+    !process.env.R2_ACCESS_KEY_ID ||
+    !process.env.R2_SECRET_ACCESS_KEY ||
+    !process.env.R2_PUBLIC_BASE_URL
+  ) {
     return { success: false, error: 'R2_CONFIG_MISSING', message: 'R2 storage is not configured' }
   }
 
@@ -100,7 +106,7 @@ export async function generatePresignedUrl(
       ),
     )
   const existing = Number(row?.total ?? 0)
-  const quota = uploadQuota(subscriptionTier)
+  const quota = uploadQuota(stageMode)
   if (existing >= quota) {
     return {
       success: false,

@@ -18,7 +18,7 @@
  * losing partial data — a state machine is overkill for 3 fields.
  */
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
 import {
   X,
@@ -293,7 +293,17 @@ function Step1Photo({
   onFileSelected: (file: File | null) => void
   pendingFile:    File | null
 }) {
-  const initialPreview = pendingFile ? URL.createObjectURL(pendingFile) : null
+  const [preview, setPreview] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!pendingFile) {
+      setPreview(null)
+      return
+    }
+    const url = URL.createObjectURL(pendingFile)
+    setPreview(url)
+    return () => URL.revokeObjectURL(url)
+  }, [pendingFile])
 
   return (
     <div className="space-y-5">
@@ -305,7 +315,7 @@ function Step1Photo({
       <UploadZone
         mode="defer"
         onFileSelected={onFileSelected}
-        initialPreview={initialPreview}
+        initialPreview={preview}
       />
 
       <p className="text-xs text-fg-3">

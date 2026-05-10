@@ -12,7 +12,7 @@
  *       'immediate' — has a plantId; calls useUploadPhoto on drop/select.
  */
 
-import { useRef, useState, useCallback } from 'react'
+import { useRef, useState, useCallback, useEffect } from 'react'
 import { Upload, Sparkles, ImageIcon, X } from 'lucide-react'
 import { useUploadPhoto, useGenerateAiImage } from '@/lib/hooks/usePlantPhotos'
 import type { GrowthStage } from '@/types/plants'
@@ -41,7 +41,8 @@ const MAX_MB    = 10
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function UploadZone(props: UploadZoneProps) {
-  const inputRef  = useRef<HTMLInputElement>(null)
+  const inputRef     = useRef<HTMLInputElement>(null)
+  const objectUrlRef = useRef<string | null>(null)
   const [dragging, setDragging] = useState(false)
   const [preview,  setPreview]  = useState<string | null>(
     props.mode === 'defer' ? (props.initialPreview ?? null) : null,
@@ -49,6 +50,11 @@ export function UploadZone(props: UploadZoneProps) {
   const [aiMode,   setAiMode]   = useState(false)
   const [aiPrompt, setAiPrompt] = useState('')
   const [error,    setError]    = useState<string | null>(null)
+
+  // Revoke any outstanding object URL on unmount to avoid memory leaks.
+  useEffect(() => () => {
+    if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current)
+  }, [])
 
   // Mutation hooks (used only in immediate mode)
   const uploadPhoto    = useUploadPhoto()
@@ -71,6 +77,8 @@ export function UploadZone(props: UploadZoneProps) {
       }
 
       const objectUrl = URL.createObjectURL(file)
+      if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current)
+      objectUrlRef.current = objectUrl
       setPreview(objectUrl)
 
       if (props.mode === 'defer') {
@@ -129,6 +137,10 @@ export function UploadZone(props: UploadZoneProps) {
   // ── Clear ───────────────────────────────────────────────────────────────────
 
   const handleClear = () => {
+    if (objectUrlRef.current) {
+      URL.revokeObjectURL(objectUrlRef.current)
+      objectUrlRef.current = null
+    }
     setPreview(null)
     setError(null)
     if (props.mode === 'defer') props.onFileSelected(null)
@@ -156,7 +168,7 @@ export function UploadZone(props: UploadZoneProps) {
         tabIndex={0}
         aria-label="Upload photo"
         onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') inputRef.current?.click()
+          if ((e.key === 'Enter' || e.key === ' ') && !isLoading && !aiMode) inputRef.current?.click()
         }}
       >
         {preview ? (

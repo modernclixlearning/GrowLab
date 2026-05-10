@@ -9,9 +9,6 @@ import { strainTemplatesRoutes } from './routes/strain-templates'
 import { careLogsRoutes } from './routes/care-logs'
 import { uploadsRoutes } from './routes/uploads'
 import { aiRoutes } from './routes/ai'
-import { sensorsRoutes } from './routes/sensors'
-import { growthRoutes } from './routes/growth'
-import { startPollingJob } from './jobs/sensor-poll'
 
 const app = new Hono()
 
@@ -34,20 +31,12 @@ app.route('/api/strain-templates', strainTemplatesRoutes)
 app.route('/api/care-logs', careLogsRoutes)
 app.route('/api/uploads', uploadsRoutes)
 app.route('/api/ai', aiRoutes)
-// F5 — Sensor devices + growth measurements
-app.route('/api/sensors', sensorsRoutes)
-app.route('/api/plants', growthRoutes) // /api/plants/:plantId/growth
 
 // Serve static frontend files in production
 if (process.env.NODE_ENV === 'production') {
   app.use('/*', serveStatic({ root: './dist/client' }))
   // SPA fallback
   app.get('/*', serveStatic({ path: './dist/client/index.html' }))
-}
-
-// F5 — Start background sensor polling job (not in test env)
-if (process.env.NODE_ENV !== 'test') {
-  startPollingJob()
 }
 
 const port = parseInt(process.env.API_PORT ?? '4001', 10)

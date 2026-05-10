@@ -14,6 +14,9 @@ import {
   savePhoto,
   listPhotos,
 } from '@/server/api/uploads/service'
+import { db } from '@/server/db'
+import { users } from '@/server/db/schema'
+import { eq } from 'drizzle-orm'
 
 const uploadsRoutes = new Hono()
 
@@ -41,10 +44,17 @@ uploadsRoutes.post('/presigned', async (c) => {
     )
   }
 
+  const [userRow] = await db
+    .select({ stageMode: users.stageMode })
+    .from(users)
+    .where(eq(users.id, auth.user.userId))
+    .limit(1)
+  const stageMode = userRow?.stageMode ?? 'expert'
+
   const result = await generatePresignedUrl(
     parsed.data,
     auth.user.userId,
-    auth.user.subscriptionTier,
+    stageMode,
   )
 
   if (!result.success) {

@@ -8,6 +8,9 @@ import { Hono } from 'hono'
 import { authenticate } from '@/server/lib/auth-middleware'
 import { generateImageSchema } from '@/server/api/ai/schemas'
 import { generateAiImage } from '@/server/api/ai/service'
+import { db } from '@/server/db'
+import { users } from '@/server/db/schema'
+import { eq } from 'drizzle-orm'
 
 const aiRoutes = new Hono()
 
@@ -35,10 +38,17 @@ aiRoutes.post('/generate-image', async (c) => {
     )
   }
 
+  const [userRow] = await db
+    .select({ stageMode: users.stageMode })
+    .from(users)
+    .where(eq(users.id, auth.user.userId))
+    .limit(1)
+  const stageMode = userRow?.stageMode ?? 'expert'
+
   const result = await generateAiImage(
     parsed.data,
     auth.user.userId,
-    auth.user.subscriptionTier,
+    stageMode,
   )
 
   if (!result.success) {
