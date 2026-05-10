@@ -6,6 +6,7 @@ import RegisterPage from './routes/register'
 import DashboardPage from './routes/dashboard'
 import GardenPage from './routes/garden'
 import PlantDetailPage from './routes/plants/$plantId'
+import ProfilePage from './routes/profile'
 
 /**
  * Wraps an authenticated route in the AppShell chrome (BottomNav + FAB).
@@ -46,6 +47,14 @@ export default function App() {
         element={
           <Shelled>
             <PlantDetailPage />
+          </Shelled>
+        }
+      />
+      <Route
+        path="/profile"
+        element={
+          <Shelled>
+            <ProfilePage />
           </Shelled>
         }
       />
