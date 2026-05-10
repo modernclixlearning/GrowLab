@@ -14,7 +14,7 @@
  */
 
 import { useNavigate } from 'react-router-dom'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Leaf, Search, LogOut, Plus } from 'lucide-react'
 import { useAuth } from '@/lib/stores/auth'
 import { usePlants } from '@/lib/hooks/usePlants'
@@ -25,21 +25,40 @@ import { AddPlantModal } from '@/components/plants/AddPlantModal'
 import { Eyebrow, H1, H2, SystemPulse } from '@/components/shell'
 import { derivePlantStats } from '@/lib/plantStats'
 import { deriveCareTag, type CareTag } from '@/lib/careTag'
+import {
+  expertToBasic,
+  BASIC_STAGE_LABEL,
+  type BasicStage,
+} from '@/lib/stage-mapping'
 import type { Plant } from '@/types/plants'
 import { STRAIN_TYPE_CONFIG, GROWTH_STAGE_CONFIG } from '@/types/plants'
+import type { StageMode } from '@/types/auth'
 
 /**
  * Filter the plant list by search query (name + human strain label) and
- * stage. Pure helper — exposed for unit testing later if needed.
+ * stage. The stage comparison is mode-aware: in Basic mode, plants are
+ * mapped through `expertToBasic` before checking against the bucket so
+ * harvesting/drying/curing/completed all match the "harvest" pill.
+ *
+ * Pure helper — exposed for unit testing.
  */
 function filterPlants(
   plants: Plant[],
   search: string,
   stageFilter: StageFilter,
+  stageMode: StageMode,
 ): Plant[] {
   const q = search.trim().toLowerCase()
   return plants.filter((p) => {
-    if (stageFilter !== 'all' && p.growthStage !== stageFilter) return false
+    if (stageFilter !== 'all') {
+      if (stageMode === 'basic') {
+        if (expertToBasic(p.growthStage) !== (stageFilter as BasicStage)) {
+          return false
+        }
+      } else if (p.growthStage !== stageFilter) {
+        return false
+      }
+    }
     if (!q) return true
     const strainLabel = STRAIN_TYPE_CONFIG[p.strainType]?.label ?? p.strainType
     return (
@@ -82,9 +101,18 @@ function PlantCardWithCareTag({
 export default function GardenPage() {
   const navigate = useNavigate()
   const { user, isAuthenticated, isLoading: authLoading, logout } = useAuth()
+  const stageMode: StageMode = user?.stageMode ?? 'expert'
   const [search, setSearch] = useState('')
   const [stageFilter, setStageFilter] = useState<StageFilter>('all')
   const [showAddModal, setShowAddModal] = useState(false)
+
+  // When the user flips Basic↔Expert in Profile, the previously-selected
+  // filter may no longer be a valid pill (e.g., 'flowering' isn't a
+  // Basic bucket). Reset to 'all' on stageMode change so the UI never
+  // ends up with an orphan filter that hides every plant.
+  useEffect(() => {
+    setStageFilter('all')
+  }, [stageMode])
 
   // Redirect to login if not authenticated
   if (!authLoading && !isAuthenticated) {
@@ -106,15 +134,22 @@ export default function GardenPage() {
   const stats = useMemo(() => derivePlantStats(allPlants), [allPlants])
   const stageCounts = useMemo(() => {
     const counts: Partial<Record<StageFilter, number>> = { all: allPlants.length }
-    for (const p of allPlants) {
-      counts[p.growthStage] = (counts[p.growthStage] ?? 0) + 1
+    if (stageMode === 'basic') {
+      for (const p of allPlants) {
+        const bucket = expertToBasic(p.growthStage)
+        counts[bucket] = (counts[bucket] ?? 0) + 1
+      }
+    } else {
+      for (const p of allPlants) {
+        counts[p.growthStage] = (counts[p.growthStage] ?? 0) + 1
+      }
     }
     return counts
-  }, [allPlants])
+  }, [allPlants, stageMode])
 
   const filtered = useMemo(
-    () => filterPlants(allPlants, search, stageFilter),
-    [allPlants, search, stageFilter],
+    () => filterPlants(allPlants, search, stageFilter, stageMode),
+    [allPlants, search, stageFilter, stageMode],
   )
 
   if (authLoading) {
@@ -189,11 +224,12 @@ export default function GardenPage() {
           />
         </div>
 
-        {/* Stage filter pills (F1: full 7-stage Expert set; toggle in F2) */}
+        {/* Stage filter pills — F2 reactive to user.stageMode. */}
         <StagePills
           selected={stageFilter}
           onChange={setStageFilter}
           counts={stageCounts}
+          stageMode={stageMode}
           className="mb-5 -mx-5 px-5"
         />
 
@@ -212,7 +248,15 @@ export default function GardenPage() {
             {/* Plant Count */}
             <Eyebrow tone="muted" className="mb-3 block">
               {filtered.length} plant{filtered.length !== 1 ? 's' : ''}
-              {stageFilter !== 'all' ? ` · ${GROWTH_STAGE_CONFIG[stageFilter].label}` : ''}
+              {stageFilter !== 'all'
+                ? ` · ${
+                    stageMode === 'basic'
+                      ? BASIC_STAGE_LABEL[stageFilter as BasicStage]
+                      : GROWTH_STAGE_CONFIG[
+                          stageFilter as Exclude<StageFilter, 'all' | BasicStage>
+                        ]?.label ?? stageFilter
+                  }`
+                : ''}
               {search ? ` · "${search}"` : ''}
             </Eyebrow>
 
