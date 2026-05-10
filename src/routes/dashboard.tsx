@@ -1,21 +1,93 @@
 /**
  * GrowLab Dashboard Page
  *
- * Main authenticated dashboard view with real plant data.
+ * F1 redesign (Master Plan §3 F1):
+ *   - <StatCard> tiles for active/total/seedling/flowering counts.
+ *   - <CareTaskCard> read-only of recent care logs from the last 48h.
+ *     `scheduledAt`/`completedAt` semantics arrive in F3; F1 uses
+ *     `loggedAt` and frames these as "recent activity".
+ *   - <MiniChart> placeholder: 5 weekly buckets derived from plant
+ *     `createdAt` ages; F5 swaps in real growth measurements.
+ *   - Layout follows `prototype/screens/dashboard.jsx`.
  */
 
 import { useNavigate } from 'react-router-dom'
-import { useState, useEffect } from 'react'
-import { Leaf, LogOut, Plus, Sprout, TreePine } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import {
+  Leaf,
+  LogOut,
+  Plus,
+  Sprout,
+  TreePine,
+  Activity,
+} from 'lucide-react'
 import { useAuth } from '@/lib/stores/auth'
 import { usePlants } from '@/lib/hooks/usePlants'
+import { useCareLogs } from '@/lib/hooks/useCareLogs'
 import { AddPlantModal } from '@/components/plants/AddPlantModal'
-import { Eyebrow, H1, H2 } from '@/components/shell'
+import { Eyebrow, H1, H2, SystemPulse } from '@/components/shell'
+import { StatCard, CareTaskCard, MiniChart } from '@/components/dashboard'
+import { derivePlantStats } from '@/lib/plantStats'
+import type { Plant } from '@/types/plants'
+import type { CareLog } from '@/types/care-logs'
+
+const RECENT_HOURS = 48
+
+/**
+ * Subscribes to care logs for a single plant and forwards the most recent
+ * entry within the last 48h to the parent. Returning `null` when there is
+ * nothing to show keeps the parent free of conditional state.
+ */
+function RecentCareTaskRow({
+  plant,
+  onClick,
+}: {
+  plant: Plant
+  onClick: () => void
+}) {
+  const { data } = useCareLogs(plant.id, { sortOrder: 'desc', limit: 5 })
+
+  // Compute the cutoff each render so it stays current as React Query
+  // refetches on focus. A `useMemo` keyed on `data` would freeze the
+  // 48h window for as long as the dashboard remains open with stale
+  // data, hiding entries that drift past the boundary. The work is
+  // O(min(5, careLogs.length)) — cheap enough not to memoize.
+  let recent: CareLog | null = null
+  if (data?.careLogs?.length) {
+    const cutoff = Date.now() - RECENT_HOURS * 60 * 60 * 1000
+    const log = data.careLogs.find((l) => {
+      const ts = new Date(l.loggedAt).getTime()
+      return !Number.isNaN(ts) && ts >= cutoff
+    })
+    recent = log ?? null
+  }
+
+  if (!recent) return null
+
+  const amountLabel =
+    recent.amount && recent.unit
+      ? `${recent.amount} ${recent.unit}`
+      : recent.amount ?? null
+
+  return (
+    <CareTaskCard
+      plant={plant}
+      logType={recent.logType}
+      occurredAt={recent.loggedAt}
+      amount={amountLabel}
+      onClick={onClick}
+    />
+  )
+}
 
 export default function DashboardPage() {
   const navigate = useNavigate()
   const { user, isAuthenticated, isLoading, logout } = useAuth()
-  const { data: plantsData } = usePlants({ limit: 100 })
+  const { data: plantsData } = usePlants({
+    sortBy: 'updatedAt',
+    sortOrder: 'desc',
+    limit: 100,
+  })
   const [showAddModal, setShowAddModal] = useState(false)
 
   // Redirect to login if not authenticated
@@ -43,16 +115,14 @@ export default function DashboardPage() {
     navigate('/')
   }
 
-  const totalPlants = plantsData?.total ?? 0
-  const activePlants = plantsData?.plants.filter(
-    (p) => p.growthStage !== 'completed'
-  ).length ?? 0
-  const seedlings = plantsData?.plants.filter(
-    (p) => p.growthStage === 'seedling'
-  ).length ?? 0
-  const flowering = plantsData?.plants.filter(
-    (p) => p.growthStage === 'flowering'
-  ).length ?? 0
+  const plants = plantsData?.plants ?? []
+  const stats = derivePlantStats(plants)
+  const seedlings = plants.filter((p) => p.growthStage === 'seedling').length
+  const totalPlants = plants.length
+
+  // Limit the "recent care" subscription to the 5 most recently updated
+  // plants — bounds the query cost while still surfacing a useful list.
+  const candidates = plants.slice(0, 5)
 
   return (
     <div className="min-h-full">
@@ -60,7 +130,7 @@ export default function DashboardPage() {
       <header className="px-5 pt-5 pb-2">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="flex h-10 w-10 items-center justify-center rounded-md bg-accent-soft text-accent">
+            <div className="flex h-11 w-11 items-center justify-center rounded-md border border-accent-dark bg-accent-soft text-accent">
               <Leaf className="h-5 w-5" />
             </div>
             <div className="min-w-0">
@@ -81,106 +151,108 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      <main className="px-5 py-4">
-        {/* Welcome Section */}
-        <div className="mb-6">
+      <main className="space-y-6 px-5 py-4">
+        {/* Welcome */}
+        <div>
           <Eyebrow tone="accent" className="mb-1 block">
             Today
           </Eyebrow>
           <H1 className="text-[28px]">
             Welcome back, {user?.name?.split(' ')[0] || 'Grower'}
           </H1>
-          <p className="mt-1 text-sm text-fg-3">
-            Here's an overview of your garden
-          </p>
-        </div>
-
-        {/* Stats Grid */}
-        <div className="mb-6 grid grid-cols-2 gap-3">
-          <button
-            onClick={() => navigate('/garden')}
-            className="text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg rounded-lg"
-          >
-            <StatCard
-              title="Active Plants"
-              value={String(activePlants)}
-              icon={<Leaf className="h-6 w-6" />}
-              tone="accent"
-            />
-          </button>
-          <StatCard
-            title="Total Plants"
-            value={String(totalPlants)}
-            icon={<TreePine className="h-6 w-6" />}
-            tone="veg"
-          />
-          <StatCard
-            title="Seedlings"
-            value={String(seedlings)}
-            icon={<Sprout className="h-6 w-6" />}
-            tone="seedling"
-          />
-          <StatCard
-            title="Flowering"
-            value={String(flowering)}
-            icon={<Leaf className="h-6 w-6" />}
-            tone="flower"
+          <SystemPulse
+            className="mt-2"
+            count={stats.active}
+            label={`Active · ${stats.flowering} Flowering`}
           />
         </div>
 
-        {/* Content */}
-        {totalPlants > 0 ? (
-          <div className="rounded-lg border border-line bg-card p-5">
-            <div className="mb-3 flex items-center justify-between">
-              <H2 className="text-[18px]">Your Garden</H2>
-              <button
-                onClick={() => navigate('/garden')}
-                className="font-mono text-[11px] uppercase tracking-eyebrow text-accent hover:text-fg transition-colors"
-              >
-                View All
-              </button>
-            </div>
-            <p className="mb-4 text-sm text-fg-3">
-              You have {activePlants} active plant{activePlants !== 1 ? 's' : ''} growing.
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => navigate('/garden')}
-                className="inline-flex flex-1 items-center justify-center rounded-md bg-accent px-4 py-2.5 text-sm font-semibold text-bg shadow-accent-glow transition-transform hover:scale-[1.02] focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
-              >
-                <Leaf className="mr-2 h-4 w-4" />
-                View Garden
-              </button>
-              <button
-                onClick={() => setShowAddModal(true)}
-                className="inline-flex flex-1 items-center justify-center rounded-md border border-line bg-card-2 px-4 py-2.5 text-sm font-semibold text-fg transition-colors hover:bg-card focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Add Plant
-              </button>
-            </div>
-          </div>
-        ) : (
-          /* Empty State */
-          <div className="rounded-lg border border-line bg-card p-8 text-center">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-accent-soft">
-              <Leaf className="h-8 w-8 text-accent" />
-            </div>
-            <Eyebrow tone="accent" className="mb-2 block">
-              First Plant
-            </Eyebrow>
-            <H2 className="mb-2">No plants yet</H2>
-            <p className="mb-6 text-sm text-fg-3">
-              Start your garden by adding your first plant
-            </p>
+        {/* Stats grid */}
+        <section aria-labelledby="stats-heading">
+          <h2 id="stats-heading" className="sr-only">
+            Garden statistics
+          </h2>
+          <div className="grid grid-cols-2 gap-3">
             <button
-              onClick={() => setShowAddModal(true)}
-              className="inline-flex items-center justify-center rounded-md bg-accent px-4 py-2.5 text-sm font-semibold text-bg shadow-accent-glow transition-transform hover:scale-[1.02] focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+              onClick={() => navigate('/garden')}
+              className="text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg rounded-lg"
             >
-              <Plus className="mr-2 h-4 w-4" />
-              Add Your First Plant
+              <StatCard
+                label="Active Plants"
+                value={stats.active}
+                tone="accent"
+                icon={<Activity className="h-5 w-5" />}
+                sub={`${stats.total} TOTAL`}
+              />
+            </button>
+            <StatCard
+              label="Total Plants"
+              value={totalPlants}
+              tone="veg"
+              icon={<TreePine className="h-5 w-5" />}
+              sub={
+                totalPlants > 0
+                  ? `${seedlings} SEED · ${stats.flowering} FLR`
+                  : 'EMPTY GARDEN'
+              }
+            />
+            <StatCard
+              label="Seedlings"
+              value={seedlings}
+              tone="seedling"
+              icon={<Sprout className="h-5 w-5" />}
+            />
+            <StatCard
+              label="Flowering"
+              value={stats.flowering}
+              tone="flower"
+              icon={<Leaf className="h-5 w-5" />}
+            />
+          </div>
+        </section>
+
+        {/* Recent activity (CareTaskCards) */}
+        <section aria-labelledby="recent-heading">
+          <div className="mb-3 flex items-baseline justify-between">
+            <H2 id="recent-heading" className="text-[18px]">
+              Recent Activity
+            </H2>
+            <button
+              onClick={() => navigate('/garden')}
+              className="font-mono text-[11px] uppercase tracking-eyebrow text-accent transition-colors hover:text-fg"
+            >
+              View garden
             </button>
           </div>
+          {totalPlants === 0 ? (
+            <EmptyDashboardCard onAdd={() => setShowAddModal(true)} />
+          ) : (
+            <div className="space-y-2">
+              {candidates.map((plant) => (
+                <RecentCareTaskRow
+                  key={plant.id}
+                  plant={plant}
+                  onClick={() => navigate(`/plants/${plant.id}`)}
+                />
+              ))}
+              <p className="font-mono text-[11px] text-fg-4">
+                Showing care logs from the last {RECENT_HOURS}h.
+              </p>
+            </div>
+          )}
+        </section>
+
+        {/* Mini chart placeholder */}
+        {totalPlants > 0 && (
+          <section aria-labelledby="growth-heading">
+            <div className="mb-3 flex items-baseline justify-between">
+              <H2 id="growth-heading" className="text-[18px]">
+                Tent Growth
+              </H2>
+              <Eyebrow tone="muted">Placeholder · F5 wires real data</Eyebrow>
+            </div>
+            <MiniChart plants={plants} />
+          </section>
         )}
       </main>
 
@@ -193,32 +265,26 @@ export default function DashboardPage() {
   )
 }
 
-interface StatCardProps {
-  title: string
-  value: string
-  icon: React.ReactNode
-  tone: 'accent' | 'veg' | 'seedling' | 'flower'
-}
-
-function StatCard({ title, value, icon, tone }: StatCardProps) {
-  const toneClasses: Record<StatCardProps['tone'], string> = {
-    accent: 'bg-accent-soft text-accent',
-    veg: 'bg-stage-veg/15 text-stage-veg',
-    seedling: 'bg-stage-seedling/15 text-stage-seedling',
-    flower: 'bg-stage-flower/15 text-stage-flower',
-  }
-
+function EmptyDashboardCard({ onAdd }: { onAdd: () => void }) {
   return (
-    <div className="rounded-lg border border-line bg-card p-4">
-      <div className="flex items-center gap-3">
-        <div className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-md ${toneClasses[tone]}`}>
-          {icon}
-        </div>
-        <div className="min-w-0">
-          <Eyebrow tone="muted">{title}</Eyebrow>
-          <p className="font-display text-2xl font-bold text-fg">{value}</p>
-        </div>
+    <div className="rounded-lg border border-line bg-card p-8 text-center">
+      <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-accent-soft">
+        <Leaf className="h-8 w-8 text-accent" />
       </div>
+      <Eyebrow tone="accent" className="mb-2 block">
+        First Plant
+      </Eyebrow>
+      <H2 className="mb-2">No plants yet</H2>
+      <p className="mb-6 text-sm text-fg-3">
+        Start your garden by adding your first plant
+      </p>
+      <button
+        onClick={onAdd}
+        className="inline-flex items-center justify-center rounded-md bg-accent px-4 py-2.5 text-sm font-semibold text-bg shadow-accent-glow transition-transform hover:scale-[1.02] focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+      >
+        <Plus className="mr-2 h-4 w-4" />
+        Add Your First Plant
+      </button>
     </div>
   )
 }
