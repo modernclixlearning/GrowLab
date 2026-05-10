@@ -145,6 +145,11 @@ export function gardenSeedPlants(): MockPlant[] {
       healthStatus: 'healthy',
       photoUrl: null,
       notes: null,
+      // F2 — exercise lightCyclePill + totalWeeks tile in plant-detail
+      // golden by giving Blue Dream a known light schedule and a
+      // pre-derived totalWeeks (mock layer normally fills weekOfStage).
+      lightSchedule: '18/6',
+      totalWeeks: 5,
       createdAt: '2026-03-25T00:00:00.000Z',
       updatedAt: '2026-05-09T07:30:00.000Z',
     },
@@ -173,6 +178,50 @@ export function gardenSeedPlants(): MockPlant[] {
       notes: null,
       createdAt: '2026-01-01T00:00:00.000Z',
       updatedAt: '2026-05-07T10:00:00.000Z',
+    },
+  ]
+}
+
+/**
+ * Single representative tent for Profile-screen goldens. F2 — minimal
+ * shape: enough to render the TentList row with light/humidity/temp
+ * tokens without exercising every column.
+ */
+export function profileSeedTents(): MockTent[] {
+  return [
+    {
+      id: 'tent-veg-room',
+      userId: FIXED_USER.id,
+      name: 'Veg Room',
+      lightTarget: '18/6',
+      humidityTargetPct: '55',
+      tempTargetC: '24',
+      notes: 'Primary tent — strain: White Widow.',
+      createdAt: '2026-04-01T00:00:00.000Z',
+      updatedAt: '2026-04-01T00:00:00.000Z',
+    },
+  ]
+}
+
+/** Strain template seed mirroring `db/seed/strain-templates.ts` (subset). */
+export function profileSeedStrainTemplates(): MockStrainTemplate[] {
+  return [
+    {
+      id: 'strain-tpl-blue-dream',
+      name: 'Blue Dream',
+      strainType: 'hybrid',
+      stageDurations: {
+        seedling: 14,
+        vegetative: 35,
+        flowering: 63,
+        harvesting: 7,
+        drying: 10,
+        curing: 30,
+      },
+      defaultLightSchedule: { veg: '18/6', flower: '12/12' },
+      description:
+        'Sativa-leaning hybrid. Vigorous vegetative growth, sweet berry profile.',
+      createdAt: '2026-01-01T00:00:00.000Z',
     },
   ]
 }
