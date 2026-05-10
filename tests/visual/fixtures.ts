@@ -93,6 +93,19 @@ export interface MockPlant {
   updatedAt: string
 }
 
+export interface MockPlantPhoto {
+  id:         string
+  plantId:    string
+  stage:      string
+  url:        string
+  sourceType: 'upload' | 'ai'
+  aiPrompt:   string | null
+  aiProvider: string | null
+  width:      number | null
+  height:     number | null
+  createdAt:  string
+}
+
 export interface MockCareLog {
   id: string
   plantId: string
@@ -106,6 +119,31 @@ export interface MockCareLog {
   completedAt?: string | null
   recurrenceRule?: Record<string, unknown> | null
   parentScheduleId?: string | null
+}
+
+// ─── F5 Fixtures ───────────────────────────────────────────────────────────
+
+export interface MockSensorDevice {
+  id: string
+  userId: string
+  provider: 'govee' | 'inkbird' | 'switchbot' | 'manual'
+  label: string
+  targetPlantId: string | null
+  targetTentId: string | null
+  lastPollAt: string | null
+  lastError: string | null
+  createdAt: string
+}
+
+export interface MockSensorReading {
+  id: string
+  sensorDeviceId: string
+  plantId: string | null
+  tentId: string | null
+  metric: 'humidity' | 'temperature' | 'light'
+  value: number
+  unit: string
+  recordedAt: string
 }
 
 export const FIXED_USER: MockUser = {
@@ -299,6 +337,20 @@ interface MockOptions {
    * to keep fixtures simple. Default empty.
    */
   scheduledCareLogs?: MockCareLog[]
+  /**
+   * F4 — plant photos returned by `GET /api/uploads/photos/:plantId`.
+   * Map plantId → photos. Default empty.
+   */
+  plantPhotos?: Record<string, MockPlantPhoto[]>
+  /**
+   * F5 — sensor devices returned by `GET /api/sensors`. Default empty.
+   */
+  sensorDevices?: MockSensorDevice[]
+  /**
+   * F5 — sensor readings returned by `GET /api/sensors/readings`.
+   * Map plantId → readings. Default empty.
+   */
+  sensorReadings?: Record<string, MockSensorReading[]>
 }
 
 /**
@@ -336,6 +388,9 @@ export async function mockGrowlabApi(page: Page, opts: MockOptions = {}) {
   const plants = (opts.plants ?? []).map(withDerivedStats)
   const careLogsByPlant = opts.careLogsByPlant ?? {}
   const scheduledCareLogs: MockCareLog[] = opts.scheduledCareLogs ?? []
+  const plantPhotosByPlant: Record<string, MockPlantPhoto[]> = opts.plantPhotos ?? {}
+  const sensorDevices: MockSensorDevice[] = opts.sensorDevices ?? []
+  const sensorReadingsByPlant: Record<string, MockSensorReading[]> = opts.sensorReadings ?? {}
   const initialUser = opts.user === undefined ? FIXED_USER : opts.user
   // Mutable so PATCH /api/auth/me can update what subsequent GET /me returns
   // within the same test (e.g. onboarding completion → user.hasOnboarded=true).
@@ -540,6 +595,106 @@ export async function mockGrowlabApi(page: Page, opts: MockOptions = {}) {
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify(ok({ careLog: completed, next: null })),
+      })
+    }
+
+    // F4 — List plant photos (GET /api/uploads/photos/:plantId)
+    const photosListMatch = pathname.match(/^\/api\/uploads\/photos\/([^/]+)$/)
+    if (photosListMatch && request.method() === 'GET') {
+      const pId = photosListMatch[1]!
+      const photos = plantPhotosByPlant[pId] ?? []
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(ok({ photos })),
+      })
+    }
+
+    // F4 — Presigned URL (POST /api/uploads/presigned) — always returns a stub
+    if (pathname === '/api/uploads/presigned' && request.method() === 'POST') {
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(ok({
+          uploadUrl:  'https://r2.example.com/stub-presigned-put',
+          publicUrl:  'https://photos.example.com/stub-photo.jpg',
+          key:        'stub/key.jpg',
+          expiresIn:  300,
+        })),
+      })
+    }
+
+    // F4 — Save photo record (POST /api/uploads/photos)
+    if (pathname === '/api/uploads/photos' && request.method() === 'POST') {
+      return route.fulfill({
+        status: 201,
+        contentType: 'application/json',
+        body: JSON.stringify(ok({
+          photo: {
+            id:         'photo-stub-1',
+            plantId:    '',
+            stage:      'seedling',
+            url:        'https://photos.example.com/stub-photo.jpg',
+            sourceType: 'upload',
+            aiPrompt:   null,
+            aiProvider: null,
+            width:      null,
+            height:     null,
+            createdAt:  FIXED_NOW,
+          },
+        })),
+      })
+    }
+
+    // F4 — AI generate (POST /api/ai/generate-image)
+    if (pathname === '/api/ai/generate-image' && request.method() === 'POST') {
+      return route.fulfill({
+        status: 201,
+        contentType: 'application/json',
+        body: JSON.stringify(ok({
+          photo: {
+            id:         'photo-ai-stub-1',
+            plantId:    '',
+            stage:      'seedling',
+            url:        'https://photos.example.com/stub-ai-photo.jpg',
+            sourceType: 'ai',
+            aiPrompt:   'Cannabis plant in seedling stage',
+            aiProvider: 'openai',
+            width:      1024,
+            height:     1024,
+            createdAt:  FIXED_NOW,
+          },
+        })),
+      })
+    }
+
+    // F5 — List sensor devices (GET /api/sensors)
+    if (pathname === '/api/sensors' && request.method() === 'GET') {
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(ok({ devices: sensorDevices })),
+      })
+    }
+
+    // F5 — Sensor readings (GET /api/sensors/readings)
+    if (pathname === '/api/sensors/readings' && request.method() === 'GET') {
+      const plantId = url.searchParams.get('plantId') ?? ''
+      const readings = sensorReadingsByPlant[plantId] ?? []
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(ok({ readings })),
+      })
+    }
+
+    // F5 — Growth measurements (GET /api/plants/:plantId/growth)
+    const growthMatch = pathname.match(/^\/api\/plants\/([^/]+)\/growth$/)
+    if (growthMatch && request.method() === 'GET') {
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(ok({ measurements: [], growthBars: [] })),
       })
     }
 
