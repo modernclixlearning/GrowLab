@@ -22,6 +22,7 @@ import {
 import { useAuth } from '@/lib/stores/auth'
 import { usePlants } from '@/lib/hooks/usePlants'
 import { useCareLogs, useScheduledCareLogs, useCompleteCareLog } from '@/lib/hooks/useCareLogs'
+import { useSensorDevices } from '@/lib/hooks/useSensors'
 import { AddPlantModal } from '@/components/plants/AddPlantModal'
 import { Eyebrow, H1, H2, SystemPulse } from '@/components/shell'
 import { StatCard, CareTaskCard, MiniChart } from '@/components/dashboard'
@@ -113,6 +114,18 @@ export default function DashboardPage() {
   const seedlings = plants.filter((p) => p.growthStage === 'seedling').length
   const totalPlants = plants.length
 
+  // F5 — Sensor status for Expert mode
+  const isExpert = user?.stageMode === 'expert'
+  const { data: sensorData } = useSensorDevices()
+  const sensorDevices = sensorData?.devices ?? []
+  const sensorStatus = !isExpert
+    ? undefined
+    : sensorDevices.length === 0
+      ? 'NO SENSORS'
+      : sensorDevices.some((d) => d.lastError)
+        ? 'SENSORS DEGRADED'
+        : 'SENSORS ONLINE'
+
   // F3 — "Pending today": scheduled tasks due today that aren't yet completed.
   const todayStart = new Date()
   todayStart.setHours(0, 0, 0, 0)
@@ -174,6 +187,7 @@ export default function DashboardPage() {
             className="mt-2"
             count={stats.active}
             label={`Active · ${stats.flowering} Flowering`}
+            status={sensorStatus}
           />
         </div>
 
