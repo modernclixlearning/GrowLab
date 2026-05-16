@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
 const envSchema = z.object({
+  NODE_ENV: z.string().optional(),
   INTERNAL_CRON_SECRET: z
     .string()
     .min(32, 'INTERNAL_CRON_SECRET must be at least 32 characters'),
@@ -20,6 +21,14 @@ if (!parsed.success) {
 
 export const env = parsed.data
 
-if (!env.VAPID_PUBLIC_KEY || !env.VAPID_PRIVATE_KEY || !env.VAPID_SUBJECT) {
+const vapidMissing =
+  !env.VAPID_PUBLIC_KEY || !env.VAPID_PRIVATE_KEY || !env.VAPID_SUBJECT
+
+if (vapidMissing) {
+  if (env.NODE_ENV === 'production') {
+    throw new Error(
+      'VAPID keys are required in production. Set VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, and VAPID_SUBJECT.',
+    )
+  }
   console.warn('[env] VAPID keys not configured — Web Push delivery will be unavailable')
 }

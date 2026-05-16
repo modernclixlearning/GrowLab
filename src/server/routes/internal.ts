@@ -16,8 +16,15 @@ internalRoutes.post('/poll-sensors', (c) => {
   return c.json({ success: true, message: 'stub — F6c' })
 })
 
-internalRoutes.post('/check-schedules', (c) => {
-  return c.json({ success: true, message: 'stub — F6c' })
+internalRoutes.post('/check-schedules', async (c) => {
+  try {
+    const { checkSchedulesDue } = await import('../api/notifications/service')
+    const result = await checkSchedulesDue()
+    return c.json({ success: true, ...result })
+  } catch (error) {
+    console.error('[internal/check-schedules] Error:', error)
+    return c.json({ success: false, error: 'check-schedules failed' }, 500)
+  }
 })
 
 internalRoutes.post('/cleanup', async (c) => {

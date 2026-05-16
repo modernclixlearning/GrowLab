@@ -4,6 +4,7 @@ import { Hono } from 'hono'
 // Mock DB-dependent modules used by /cleanup so tests run without DATABASE_URL
 vi.mock('@/server/api/notifications/service', () => ({
   purgeNotifications: vi.fn().mockResolvedValue(undefined),
+  checkSchedulesDue: vi.fn().mockResolvedValue({ processed: 0, notified: 0 }),
 }))
 vi.mock('@/server/jobs/sensor-poll', () => ({
   cleanupOldReadings: vi.fn().mockResolvedValue(undefined),

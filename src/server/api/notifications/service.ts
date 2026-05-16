@@ -1,6 +1,8 @@
-import { eq, and, desc, isNull, lt, sql } from 'drizzle-orm'
+import { eq, and, desc, isNull, lt, gt, gte, lte, sql } from 'drizzle-orm'
 import { db } from '@/server/db'
 import { notifications, type Notification } from '@/server/db/schema/notifications'
+import { careLogs } from '@/server/db/schema/care-logs'
+import { plants } from '@/server/db/schema/plants'
 import { nanoid } from 'nanoid'
 import type { ListNotificationsQuery } from './schemas'
 
@@ -92,6 +94,73 @@ export async function createNotification(input: {
     .returning()
 
   return { success: true, data: rows[0]! }
+}
+
+export async function checkSchedulesDue(): Promise<{ processed: number; notified: number }> {
+  const { sendPushToUser } = await import('@/server/api/push/service')
+
+  const dueLogs = await db
+    .select({
+      id: careLogs.id,
+      logType: careLogs.logType,
+      plantId: careLogs.plantId,
+      plantName: plants.name,
+      userId: plants.userId,
+    })
+    .from(careLogs)
+    .innerJoin(plants, eq(careLogs.plantId, plants.id))
+    .where(
+      and(
+        isNull(careLogs.completedAt),
+        gte(careLogs.scheduledAt, sql`now()`),
+        lte(careLogs.scheduledAt, sql`now() + interval '30 minutes'`),
+      ),
+    )
+
+  let notified = 0
+
+  for (const log of dueLogs) {
+    const channelKey = `schedule_due:${log.id}`
+
+    const recent = await db
+      .select({ id: notifications.id })
+      .from(notifications)
+      .where(
+        and(
+          eq(notifications.userId, log.userId),
+          eq(notifications.channelKey, channelKey),
+          gt(notifications.createdAt, sql`now() - interval '2 hours'`),
+        ),
+      )
+      .limit(1)
+
+    if (recent.length > 0) continue
+
+    const title = `Care task due: ${log.logType}`
+    const body = `${log.plantName} needs attention in the next 30 minutes.`
+
+    const notifResult = await createNotification({
+      userId: log.userId,
+      type: 'schedule_due',
+      title,
+      body,
+      referenceId: log.id,
+      referenceType: 'care_log',
+      channelKey,
+    })
+
+    if (notifResult.success) {
+      notified++
+      await sendPushToUser(log.userId, {
+        type: 'schedule_due',
+        title,
+        body,
+        data: { notificationId: notifResult.data.id, referenceId: log.id, referenceType: 'care_log' },
+      })
+    }
+  }
+
+  return { processed: dueLogs.length, notified }
 }
 
 export async function purgeNotifications(): Promise<void> {
