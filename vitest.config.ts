@@ -12,12 +12,17 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
+    environmentMatchGlobs: [
+      ['tests/components/**', 'jsdom'],
+      ['tests/routes/**', 'jsdom'],
+    ],
     include: ['tests/**/*.test.ts'],
+    setupFiles: ['tests/setup.ts'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
-      include: ['src/**/*.ts'],
-      exclude: ['src/**/*.d.ts', 'src/routes/**/*'],
+      include: ['src/**/*.ts', 'src/**/*.tsx'],
+      exclude: ['src/**/*.d.ts'],
     },
   },
 })
