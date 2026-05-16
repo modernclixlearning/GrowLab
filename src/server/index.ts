@@ -14,6 +14,7 @@ import { growthRoutes } from './routes/growth'
 import { internalRoutes } from './routes/internal'
 import { notificationsRoutes } from './routes/notifications'
 import { pushRoutes } from './routes/push'
+import { exportRoutes } from './routes/export'
 
 const app = new Hono()
 
@@ -41,6 +42,7 @@ app.route('/api/plants', growthRoutes) // /api/plants/:plantId/growth
 app.route('/api/internal', internalRoutes)
 app.route('/api/notifications', notificationsRoutes)
 app.route('/api/push', pushRoutes)
+app.route('/api/export', exportRoutes)
 
 // Serve static frontend files in production
 if (process.env.NODE_ENV === 'production') {

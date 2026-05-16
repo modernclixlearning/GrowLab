@@ -21,6 +21,7 @@ import { PrefsList } from '@/components/profile/PrefsList'
 import { TentList } from '@/components/profile/TentList'
 import { TentModal } from '@/components/profile/TentModal'
 import { SensorDevicesSection } from '@/components/profile/SensorDevicesSection'
+import { ExportButton } from '@/components/export/ExportButton'
 import { H2 } from '@/components/shell'
 import type { Tent } from '@/types/tents'
 
@@ -87,6 +88,12 @@ export default function ProfilePage() {
 
       {/* F5 — Sensor Devices (Expert only) */}
       {user.stageMode === 'expert' && <SensorDevicesSection />}
+
+      {/* F6d — Data export */}
+      <section className="px-5 pb-4">
+        <H2 className="mb-3 text-sm font-semibold text-fg-3 uppercase tracking-wider">Data</H2>
+        <ExportButton />
+      </section>
 
       <section className="px-5 pb-10">
         <H2 className="sr-only">Account</H2>

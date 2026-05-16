@@ -30,6 +30,7 @@ import { usePlant, useUpdatePlant, useDeletePlant } from '@/lib/hooks/usePlants'
 import { useCareLogs } from '@/lib/hooks/useCareLogs'
 import { useStrainTemplates } from '@/lib/hooks/useStrainTemplates'
 import { CareLogList } from '@/components/care-logs/CareLogList'
+import { PlantPDFButton } from '@/components/export/PlantPDFButton'
 import { LightCyclePill } from '@/components/plants/LightCyclePill'
 import { PhotoTimeline } from '@/components/plants/PhotoTimeline'
 import { HumidityWidget } from '@/components/plants/HumidityWidget'
@@ -220,13 +221,16 @@ export default function PlantDetailPage() {
           >
             <ArrowLeft className="h-5 w-5" />
           </button>
-          <button
-            onClick={() => setShowDeleteConfirm(true)}
-            className="flex h-10 w-10 items-center justify-center rounded-full border border-line bg-bg/60 text-fg-2 backdrop-blur transition-colors hover:bg-status-warn/30 hover:text-status-warn focus:outline-none focus-visible:ring-2 focus-visible:ring-status-warn focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
-            aria-label="Delete plant"
-          >
-            <Trash2 className="h-5 w-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            <PlantPDFButton plant={plant} />
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-line bg-bg/60 text-fg-2 backdrop-blur transition-colors hover:bg-status-warn/30 hover:text-status-warn focus:outline-none focus-visible:ring-2 focus-visible:ring-status-warn focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+              aria-label="Delete plant"
+            >
+              <Trash2 className="h-5 w-5" />
+            </button>
+          </div>
         </div>
 
         {/* Identity row pinned at bottom */}
