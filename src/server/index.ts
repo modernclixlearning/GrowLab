@@ -18,6 +18,9 @@ import { exportRoutes } from './routes/export'
 
 const app = new Hono()
 
+// Health check (used by Render)
+app.get('/healthz', (c) => c.json({ status: 'ok' }))
+
 // CORS for dev (Vite dev server on port 3000)
 app.use(
   '/api/*',
