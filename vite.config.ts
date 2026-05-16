@@ -10,6 +10,9 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       strategies: 'generateSW',
+      workbox: {
+        importScripts: ['/sw-push-handler.js'],
+      },
       manifest: {
         name: 'GrowLab',
         short_name: 'GrowLab',

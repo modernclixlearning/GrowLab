@@ -17,9 +17,19 @@ internalRoutes.post('/poll-sensors', (c) => {
 })
 
 internalRoutes.post('/check-schedules', (c) => {
-  return c.json({ success: true, message: 'stub — F6b/F6c' })
+  return c.json({ success: true, message: 'stub — F6c' })
 })
 
-internalRoutes.post('/cleanup', (c) => {
-  return c.json({ success: true, message: 'stub — F6b/F6c' })
+internalRoutes.post('/cleanup', async (c) => {
+  try {
+    const [{ purgeNotifications }, { cleanupOldReadings }] = await Promise.all([
+      import('../api/notifications/service'),
+      import('../jobs/sensor-poll'),
+    ])
+    await Promise.all([purgeNotifications(), cleanupOldReadings()])
+    return c.json({ success: true, message: 'cleanup complete' })
+  } catch (error) {
+    console.error('[internal/cleanup] Error:', error)
+    return c.json({ success: false, error: 'Cleanup failed' }, 500)
+  }
 })

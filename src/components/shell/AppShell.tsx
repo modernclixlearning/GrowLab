@@ -24,10 +24,12 @@
  *   the scrollable content (e.g. screen title row, action icons).
  */
 
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { BottomNav } from './BottomNav'
 import { useAuth } from '@/lib/stores/auth'
 import { StageModeOnboarding } from '@/components/onboarding/StageModeOnboarding'
+import { NotificationBadge } from '@/components/notifications/NotificationBadge'
+import { NotificationDrawer } from '@/components/notifications/NotificationDrawer'
 
 export interface AppShellProps {
   children: ReactNode
@@ -46,9 +48,8 @@ export function AppShell({
   onFabClick,
 }: AppShellProps) {
   const { user, isAuthenticated } = useAuth()
-  // Show the StageMode onboarding overlay once per user. The flag is
-  // toggled by the overlay itself via PATCH /me; the toggle in Profile
-  // is unaffected (always reversible).
+  const [notifOpen, setNotifOpen] = useState(false)
+
   const showOnboarding =
     isAuthenticated && user !== null && user.hasOnboarded === false
 
@@ -56,6 +57,12 @@ export function AppShell({
     <div className="relative h-dvh w-full bg-bg font-body text-fg antialiased">
       {/* Outer centering for desktop / large screens, mobile-first inside */}
       <div className="relative mx-auto flex h-dvh w-full max-w-[412px] flex-col overflow-hidden bg-bg">
+        {/* Notification badge in top-right corner for authenticated users */}
+        {isAuthenticated && (
+          <div className="absolute right-3 top-3 z-20">
+            <NotificationBadge onClick={() => setNotifOpen(true)} />
+          </div>
+        )}
         {header ? <div className="relative z-20 flex-shrink-0">{header}</div> : null}
 
         <div
@@ -74,6 +81,7 @@ export function AppShell({
       </div>
 
       {showOnboarding && <StageModeOnboarding />}
+      <NotificationDrawer open={notifOpen} onClose={() => setNotifOpen(false)} />
     </div>
   )
 }

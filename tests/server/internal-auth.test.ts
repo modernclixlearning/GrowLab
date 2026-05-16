@@ -1,6 +1,16 @@
 import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest'
 import { Hono } from 'hono'
 
+// Mock DB-dependent modules used by /cleanup so tests run without DATABASE_URL
+vi.mock('@/server/api/notifications/service', () => ({
+  purgeNotifications: vi.fn().mockResolvedValue(undefined),
+}))
+vi.mock('@/server/jobs/sensor-poll', () => ({
+  cleanupOldReadings: vi.fn().mockResolvedValue(undefined),
+  startPollingJob: vi.fn(),
+  pollOnce: vi.fn(),
+}))
+
 const VALID_SECRET = 'a'.repeat(32)
 
 describe('Internal API — bearer auth', () => {

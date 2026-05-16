@@ -4,6 +4,9 @@ const envSchema = z.object({
   INTERNAL_CRON_SECRET: z
     .string()
     .min(32, 'INTERNAL_CRON_SECRET must be at least 32 characters'),
+  VAPID_PUBLIC_KEY: z.string().optional(),
+  VAPID_PRIVATE_KEY: z.string().optional(),
+  VAPID_SUBJECT: z.string().optional(),
 })
 
 const parsed = envSchema.safeParse(process.env)
@@ -16,3 +19,7 @@ if (!parsed.success) {
 }
 
 export const env = parsed.data
+
+if (!env.VAPID_PUBLIC_KEY || !env.VAPID_PRIVATE_KEY || !env.VAPID_SUBJECT) {
+  console.warn('[env] VAPID keys not configured — Web Push delivery will be unavailable')
+}

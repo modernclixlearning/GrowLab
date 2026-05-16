@@ -47,6 +47,12 @@ export const tents = pgTable(
     /** Free-form notes about the tent. */
     notes: text('notes'),
 
+    /** Alert tolerance for humidity (±pct). Default 5.00. */
+    humidityTolerancePct: numeric('humidity_tolerance_pct', { precision: 5, scale: 2 }).default('5.00'),
+
+    /** Alert tolerance for temperature (±°C). Default 2.00. */
+    tempToleranceC: numeric('temp_tolerance_c', { precision: 5, scale: 2 }).default('2.00'),
+
     /** Record creation timestamp */
     createdAt: timestamp('created_at', { withTimezone: true })
       .notNull()

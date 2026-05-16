@@ -16,7 +16,7 @@ export default defineConfig({
       ['tests/components/**', 'jsdom'],
       ['tests/routes/**', 'jsdom'],
     ],
-    include: ['tests/**/*.test.ts'],
+    include: ['tests/**/*.test.ts', 'tests/**/*.test.tsx'],
     setupFiles: ['tests/setup.ts'],
     coverage: {
       provider: 'v8',

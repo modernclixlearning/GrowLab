@@ -13,6 +13,8 @@ import { sensorsRoutes } from './routes/sensors'
 import { growthRoutes } from './routes/growth'
 import { startPollingJob } from './jobs/sensor-poll'
 import { internalRoutes } from './routes/internal'
+import { notificationsRoutes } from './routes/notifications'
+import { pushRoutes } from './routes/push'
 
 const app = new Hono()
 
@@ -38,6 +40,8 @@ app.route('/api/ai', aiRoutes)
 app.route('/api/sensors', sensorsRoutes)
 app.route('/api/plants', growthRoutes) // /api/plants/:plantId/growth
 app.route('/api/internal', internalRoutes)
+app.route('/api/notifications', notificationsRoutes)
+app.route('/api/push', pushRoutes)
 
 // Serve static frontend files in production
 if (process.env.NODE_ENV === 'production') {
