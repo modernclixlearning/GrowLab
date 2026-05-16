@@ -28,6 +28,7 @@ import {
 import { useAuth } from '@/lib/stores/auth'
 import { usePlant, useUpdatePlant, useDeletePlant } from '@/lib/hooks/usePlants'
 import { useCareLogs } from '@/lib/hooks/useCareLogs'
+import { useGrowthMeasurements } from '@/lib/hooks/useGrowth'
 import { useStrainTemplates } from '@/lib/hooks/useStrainTemplates'
 import { CareLogList } from '@/components/care-logs/CareLogList'
 import { PlantPDFButton } from '@/components/export/PlantPDFButton'
@@ -100,6 +101,9 @@ export default function PlantDetailPage() {
     sortOrder: 'desc',
     limit: 1,
   })
+  // PDF queries — broader fetch (all log types, higher limit) for the report.
+  const { data: pdfCareLogsData } = useCareLogs(plantId ?? '', { sortOrder: 'desc', limit: 100 })
+  const { data: growthData } = useGrowthMeasurements(plantId ?? '')
   const updatePlant = useUpdatePlant()
   const deletePlant = useDeletePlant()
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
@@ -222,7 +226,11 @@ export default function PlantDetailPage() {
             <ArrowLeft className="h-5 w-5" />
           </button>
           <div className="flex items-center gap-2">
-            <PlantPDFButton plant={plant} />
+            <PlantPDFButton
+              plant={plant}
+              careLogs={pdfCareLogsData?.careLogs ?? []}
+              growthMeasurements={growthData?.measurements ?? []}
+            />
             <button
               onClick={() => setShowDeleteConfirm(true)}
               className="flex h-10 w-10 items-center justify-center rounded-full border border-line bg-bg/60 text-fg-2 backdrop-blur transition-colors hover:bg-status-warn/30 hover:text-status-warn focus:outline-none focus-visible:ring-2 focus-visible:ring-status-warn focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
