@@ -132,6 +132,14 @@ export async function updateTent(
       input.tempTargetC === null ? null : String(input.tempTargetC)
   }
   if (input.notes !== undefined) updateValues.notes = input.notes
+  if (input.humidityTolerancePct !== undefined) {
+    updateValues.humidityTolerancePct =
+      input.humidityTolerancePct === null ? null : String(input.humidityTolerancePct)
+  }
+  if (input.tempToleranceC !== undefined) {
+    updateValues.tempToleranceC =
+      input.tempToleranceC === null ? null : String(input.tempToleranceC)
+  }
 
   const [updated] = await db
     .update(tents)

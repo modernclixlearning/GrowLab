@@ -8,7 +8,7 @@ vi.mock('@/server/api/notifications/service', () => ({
 }))
 vi.mock('@/server/jobs/sensor-poll', () => ({
   cleanupOldReadings: vi.fn().mockResolvedValue(undefined),
-  startPollingJob: vi.fn(),
+  pollAndAlert: vi.fn().mockResolvedValue({ processed: 0, alerts: 0 }),
   pollOnce: vi.fn(),
 }))
 

@@ -12,8 +12,15 @@ internalRoutes.use('/*', async (c, next) => {
   await next()
 })
 
-internalRoutes.post('/poll-sensors', (c) => {
-  return c.json({ success: true, message: 'stub — F6c' })
+internalRoutes.post('/poll-sensors', async (c) => {
+  try {
+    const { pollAndAlert } = await import('../jobs/sensor-poll')
+    const result = await pollAndAlert()
+    return c.json({ success: true, ...result })
+  } catch (error) {
+    console.error('[internal/poll-sensors] Error:', error)
+    return c.json({ success: false, error: 'poll-sensors failed' }, 500)
+  }
 })
 
 internalRoutes.post('/check-schedules', async (c) => {

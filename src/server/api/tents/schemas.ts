@@ -58,6 +58,8 @@ export const updateTentSchema = z.object({
   humidityTargetPct: humidityTargetPct.nullable().optional(),
   tempTargetC: tempTargetC.nullable().optional(),
   notes: notes.nullable().optional(),
+  humidityTolerancePct: z.number().min(0).max(50).nullable().optional(),
+  tempToleranceC: z.number().min(0).max(20).nullable().optional(),
 })
 
 /** Listing query — no params yet, but typed for forward-compat. */

@@ -11,7 +11,6 @@ import { uploadsRoutes } from './routes/uploads'
 import { aiRoutes } from './routes/ai'
 import { sensorsRoutes } from './routes/sensors'
 import { growthRoutes } from './routes/growth'
-import { startPollingJob } from './jobs/sensor-poll'
 import { internalRoutes } from './routes/internal'
 import { notificationsRoutes } from './routes/notifications'
 import { pushRoutes } from './routes/push'
@@ -48,11 +47,6 @@ if (process.env.NODE_ENV === 'production') {
   app.use('/*', serveStatic({ root: './dist/client' }))
   // SPA fallback
   app.get('/*', serveStatic({ path: './dist/client/index.html' }))
-}
-
-// Start background sensor polling job (not in test env)
-if (process.env.NODE_ENV !== 'test') {
-  startPollingJob()
 }
 
 const port = parseInt(process.env.API_PORT ?? '4001', 10)
