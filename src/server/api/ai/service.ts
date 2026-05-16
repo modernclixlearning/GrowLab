@@ -13,6 +13,7 @@
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
 import { nanoid } from 'nanoid'
 import { db } from '@/server/db'
+import { env } from '@/server/lib/env'
 import { plants } from '@/server/db/schema'
 import { eq } from 'drizzle-orm'
 import { STAGE_PRESETS } from '@/server/ai/stage-presets'
@@ -148,7 +149,7 @@ export async function generateAiImage(
   // Generate
   let aiImageUrl: string
   try {
-    const provider = process.env.AI_PROVIDER ?? 'openai'
+    const provider = env.AI_PROVIDER
     if (provider === 'openai') {
       const result = await generateWithOpenAi(prompt)
       aiImageUrl = result.url
@@ -180,7 +181,7 @@ export async function generateAiImage(
     { plantId: input.plantId, stage: input.stage, url: publicUrl },
     userId,
     'ai',
-    { prompt, provider: process.env.AI_PROVIDER ?? 'openai' },
+    { prompt, provider: env.AI_PROVIDER },
   )
 
   if (!saveResult.success) {

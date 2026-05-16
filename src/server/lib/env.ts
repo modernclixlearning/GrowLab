@@ -8,6 +8,7 @@ const envSchema = z.object({
   VAPID_PUBLIC_KEY: z.string().optional(),
   VAPID_PRIVATE_KEY: z.string().optional(),
   VAPID_SUBJECT: z.string().optional(),
+  AI_PROVIDER: z.enum(['openai', 'replicate', 'stability']).default('openai'),
 })
 
 const parsed = envSchema.safeParse(process.env)
@@ -31,4 +32,8 @@ if (vapidMissing) {
     )
   }
   console.warn('[env] VAPID keys not configured — Web Push delivery will be unavailable')
+}
+
+if (!process.env.AI_PROVIDER) {
+  console.warn('[env] AI_PROVIDER not set, defaulting to openai')
 }

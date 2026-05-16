@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git pull *)",
+      "Bash(pnpm test:run)",
+      "Bash(pnpm add *)",
+      "Bash(pnpm approve-builds *)",
+      "Bash(pnpm install *)",
+      "Bash(pnpm build *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(pnpm dlx *)",
+      "Bash(pnpm db:push)",
+      "Bash(node -e \"console.log\\('a'.repeat\\(32\\)\\)\")",
+      "Bash(INTERNAL_CRON_SECRET=$\\(node -e \"console.log\\('a'.repeat\\(32\\)\\)\"\\) pnpm test:run)",
+      "Bash(echo \"exit $?\")"
+    ]
+  }
+}

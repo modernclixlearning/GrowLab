@@ -1,17 +1,54 @@
 /**
- * GrowLab — Dashboard route smoke tests (F1).
+ * GrowLab — Dashboard route tests (F6e RTL rewrite)
  *
- * FIXME(f1): same constraint as `garden.test.ts` — no jsdom/RTL available
- * and adding deps is forbidden by the F1 hard rules. We exercise the
- * pure helpers that own dashboard derivations (`buildBuckets` for the
- * MiniChart placeholder + the shared `derivePlantStats`). Visual smoke
- * coverage of the rendered Dashboard lives in `tests/visual/dashboard.spec.ts`.
+ * Phase F6e: upgraded from F1 pure-helper smoke to @testing-library/react
+ * render tests with full hook mocking. Retains the derivePlantStats /
+ * buildBuckets unit tests from the original F1 file.
  */
 
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
+import { render, screen } from '@testing-library/react'
 import { buildBuckets } from '@/components/dashboard/MiniChart'
 import { derivePlantStats } from '@/lib/plantStats'
 import type { Plant, GrowthStage } from '@/types/plants'
+
+// ── Mock modules before component import ───────────────────────────────────
+
+vi.mock('react-router-dom', () => ({
+  useNavigate: () => vi.fn(),
+}))
+
+vi.mock('@/lib/stores/auth', () => ({
+  useAuth: () => ({
+    user: { id: 'u1', email: 'grower@test.com', name: 'Test Grower', stageMode: 'basic', hasOnboarded: true },
+    isAuthenticated: true,
+    isLoading: false,
+    logout: vi.fn(),
+  }),
+}))
+
+vi.mock('@/lib/hooks/usePlants', () => ({
+  usePlants: () => ({ data: { plants: [] }, isLoading: false }),
+}))
+
+vi.mock('@/lib/hooks/useCareLogs', () => ({
+  useCareLogs: () => ({ data: { careLogs: [] }, isLoading: false }),
+  useScheduledCareLogs: () => ({ data: { careLogs: [] }, isLoading: false }),
+  useCompleteCareLog: () => ({ mutate: vi.fn(), isPending: false }),
+}))
+
+vi.mock('@/lib/hooks/useSensors', () => ({
+  useSensorDevices: () => ({ data: { devices: [] }, isLoading: false }),
+}))
+
+vi.mock('@/components/plants/AddPlantModal', () => ({
+  AddPlantModal: () => null,
+}))
+
+vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
+
+import DashboardPage from '@/routes/dashboard'
+
 
 const NOW = new Date('2026-05-09T12:00:00.000Z')
 
@@ -78,5 +115,25 @@ describe('Dashboard — derived data', () => {
 
   it('buildBuckets returns zeros for an empty plant list', () => {
     expect(buildBuckets([], NOW)).toEqual([0, 0, 0, 0, 0])
+  })
+})
+
+// ── RTL rendering tests ───────────────────────────────────────────────────
+
+describe('DashboardPage — rendering', () => {
+  it('renders without crashing and shows the user greeting', () => {
+    render(<DashboardPage />)
+    expect(screen.getByText(/welcome back/i)).toBeInTheDocument()
+  })
+
+  it('shows the Total Plants stat card', () => {
+    render(<DashboardPage />)
+    expect(screen.getByText('Total Plants')).toBeInTheDocument()
+  })
+
+  it('shows 0 as Total Plants count when garden is empty', () => {
+    render(<DashboardPage />)
+    // StatCard renders value={totalPlants} — 0 for an empty plant list
+    expect(screen.getAllByText('0').length).toBeGreaterThan(0)
   })
 })
