@@ -125,17 +125,15 @@ export default function GardenPage() {
     setStageFilter('all')
   }, [stageMode])
 
-  // Redirect to login if not authenticated. Returning <Navigate> instead of
-  // calling navigate() keeps the render side-effect-free (avoids "cannot
-  // update during render" warnings and double-navigation loops).
-  if (!authLoading && !isAuthenticated) {
-    return <Navigate to="/login" replace />
-  }
-
   // Fetch the full plant list once and apply filters client-side so the
   // SystemPulse counts always reflect the unfiltered totals while the
   // visible list responds to filters. Backend filtering would force two
   // queries per render — overkill for the typical < 100-plant garden.
+  //
+  // NOTE: this query and the derived useMemo hooks below MUST run before the
+  // auth early-return; calling hooks after a conditional return violates the
+  // Rules of Hooks and crashes with React error #310 when the auth-loading
+  // state flips between renders.
   const { data, isLoading, error } = usePlants({
     sortBy: 'updatedAt',
     sortOrder: 'desc',
@@ -163,6 +161,13 @@ export default function GardenPage() {
     () => filterPlants(allPlants, search, stageFilter, stageMode),
     [allPlants, search, stageFilter, stageMode],
   )
+
+  // Redirect to login if not authenticated. Returning <Navigate> instead of
+  // calling navigate() keeps the render side-effect-free (avoids "cannot
+  // update during render" warnings and double-navigation loops).
+  if (!authLoading && !isAuthenticated) {
+    return <Navigate to="/login" replace />
+  }
 
   if (authLoading) {
     return (

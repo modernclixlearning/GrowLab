@@ -84,6 +84,25 @@ export default function DashboardPage() {
   })
   const [showAddModal, setShowAddModal] = useState(false)
 
+  // ── Data hooks ──────────────────────────────────────────────────────────
+  // All hooks MUST run before the early returns below; calling hooks after a
+  // conditional return violates the Rules of Hooks and crashes with React
+  // error #310 when `isLoading` flips between renders.
+
+  // F5 — Sensor devices (Expert mode status is derived after the returns).
+  const { data: sensorData } = useSensorDevices()
+
+  // F3 — "Pending today": scheduled tasks due today that aren't yet completed.
+  const todayStart = new Date()
+  todayStart.setHours(0, 0, 0, 0)
+  const todayEnd = new Date()
+  todayEnd.setHours(23, 59, 59, 999)
+  const { data: pendingData } = useScheduledCareLogs({
+    scheduledFrom: todayStart.toISOString(),
+    scheduledTo: todayEnd.toISOString(),
+  })
+  const { mutate: completeCareLog, isPending: isCompleting } = useCompleteCareLog()
+
   // Redirect to login if not authenticated
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -114,9 +133,8 @@ export default function DashboardPage() {
   const seedlings = plants.filter((p) => p.growthStage === 'seedling').length
   const totalPlants = plants.length
 
-  // F5 — Sensor status for Expert mode
+  // F5 — Sensor status for Expert mode (derived from the hook data above).
   const isExpert = user?.stageMode === 'expert'
-  const { data: sensorData } = useSensorDevices()
   const sensorDevices = sensorData?.devices ?? []
   const sensorStatus = !isExpert
     ? undefined
@@ -125,18 +143,6 @@ export default function DashboardPage() {
       : sensorDevices.some((d) => d.lastError)
         ? 'SENSORS DEGRADED'
         : 'SENSORS ONLINE'
-
-  // F3 — "Pending today": scheduled tasks due today that aren't yet completed.
-  const todayStart = new Date()
-  todayStart.setHours(0, 0, 0, 0)
-  const todayEnd = new Date()
-  todayEnd.setHours(23, 59, 59, 999)
-
-  const { data: pendingData } = useScheduledCareLogs({
-    scheduledFrom: todayStart.toISOString(),
-    scheduledTo: todayEnd.toISOString(),
-  })
-  const { mutate: completeCareLog, isPending: isCompleting } = useCompleteCareLog()
 
   const plantMap: Record<string, string> = {}
   for (const p of plants) plantMap[p.id] = p.name
