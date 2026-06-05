@@ -69,8 +69,11 @@ function AppShellInner({
 
   return (
     <div className="relative h-dvh w-full bg-bg font-body text-fg antialiased">
-      {/* Outer centering for desktop / large screens, mobile-first inside */}
-      <div className="relative mx-auto flex h-dvh w-full max-w-[412px] flex-col overflow-hidden bg-bg">
+      {/* Mobile-first column that grows into the available width on tablet /
+          desktop. The base 412px keeps the phone layout pixel-identical;
+          md/lg breakpoints widen the canvas so larger screens are used
+          instead of left as empty letterboxing. */}
+      <div className="relative mx-auto flex h-dvh w-full max-w-[412px] flex-col overflow-hidden bg-bg md:max-w-3xl lg:max-w-4xl">
         {/* Notification badge in top-right corner for authenticated users */}
         {isAuthenticated && showAbsoluteBell && (
           <div className="absolute right-3 top-3 z-20">

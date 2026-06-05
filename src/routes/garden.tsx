@@ -265,8 +265,9 @@ export default function GardenPage() {
               {search ? ` · "${search}"` : ''}
             </Eyebrow>
 
-            {/* Plant List */}
-            <div className="space-y-3 pb-4">
+            {/* Plant List — single column on mobile, multi-column on
+                tablet/desktop to use the wider canvas. */}
+            <div className="grid grid-cols-1 gap-3 pb-4 md:grid-cols-2 lg:grid-cols-3">
               {filtered.map((plant) => (
                 <PlantCardWithCareTag
                   key={plant.id}

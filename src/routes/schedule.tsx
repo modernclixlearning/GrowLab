@@ -117,7 +117,7 @@ export default function SchedulePage() {
   }
 
   return (
-    <div className="flex flex-col gap-6 pb-24">
+    <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 pb-24">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-fg-1">Schedule</h1>

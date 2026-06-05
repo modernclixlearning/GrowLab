@@ -274,7 +274,7 @@ export default function PlantDetailPage() {
         )}
       </header>
 
-      <main className="space-y-5 px-5 py-5">
+      <main className="mx-auto w-full max-w-2xl space-y-5 px-5 py-5">
         {/* Stat row */}
         <div className="grid grid-cols-3 gap-3">
           <StatTile
