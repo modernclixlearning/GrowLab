@@ -192,6 +192,12 @@ export default function GardenPage() {
           </div>
 
           <div className="flex items-center gap-2">
+            <span
+              className="hidden text-xs text-fg-3 sm:block max-w-[120px] truncate"
+              title={user?.name || user?.email}
+            >
+              {user?.name || user?.email}
+            </span>
             <NotificationBadge onClick={openNotifications} />
             <button
               onClick={handleLogout}

@@ -1,5 +1,5 @@
 import { eq, and, gte, lte, desc } from 'drizzle-orm'
-import { strFromU8, zipSync } from 'fflate'
+import { zipSync } from 'fflate'
 import { db } from '@/server/db'
 import { plants } from '@/server/db/schema/plants'
 import { careLogs } from '@/server/db/schema/care-logs'

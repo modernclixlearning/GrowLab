@@ -6,7 +6,7 @@
  * account creation.
  */
 
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -197,12 +197,12 @@ export default function RegisterPage() {
 
           <div className="mt-6 text-center text-sm">
             <span className="text-fg-3">Already have an account? </span>
-            <a
-              href="/login"
+            <Link
+              to="/login"
               className="font-medium text-accent transition-colors hover:text-fg"
             >
               Sign in
-            </a>
+            </Link>
           </div>
         </div>
       </div>

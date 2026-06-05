@@ -48,13 +48,28 @@ vi.mock('@/lib/hooks/useStrainTemplates', () => ({
 
 vi.mock('@/components/care-logs/CareLogList', () => ({ CareLogList: () => null }))
 vi.mock('@/components/plants/PhotoTimeline', () => ({ PhotoTimeline: () => null }))
+vi.mock('@/components/plants/UploadZone', () => ({ UploadZone: () => null }))
 vi.mock('@/components/plants/HumidityWidget', () => ({ HumidityWidget: () => null }))
 vi.mock('@/components/plants/TempWidget', () => ({ TempWidget: () => null }))
 vi.mock('@/components/plants/GrowthBars', () => ({ GrowthBars: () => null }))
 vi.mock('@/components/export/PlantPDFButton', () => ({ PlantPDFButton: () => null }))
+vi.mock('@/components/notifications/NotificationBadge', () => ({ NotificationBadge: () => null }))
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
 
 import PlantDetailPage from '@/routes/plants/$plantId'
+import { NotificationDrawerProvider } from '@/lib/stores/notification-drawer'
+
+/**
+ * PlantDetail consumes `useNotificationDrawer`, which throws when rendered
+ * outside its provider. Wrap renders so the component mounts in isolation.
+ */
+function renderPage() {
+  return render(
+    <NotificationDrawerProvider>
+      <PlantDetailPage />
+    </NotificationDrawerProvider>,
+  )
+}
 
 const mockPlant = {
   id: 'plant1',
@@ -128,18 +143,18 @@ describe('Plant Detail — derivations', () => {
 
 describe('PlantDetailPage — rendering', () => {
   it('renders the plant name', () => {
-    render(<PlantDetailPage />)
+    renderPage()
     expect(screen.getByText('OG Kush #1')).toBeInTheDocument()
   })
 
   it('renders the current growth stage label', () => {
-    render(<PlantDetailPage />)
+    renderPage()
     // GROWTH_STAGE_CONFIG['vegetative'].label = 'Vegetative'
     expect(screen.getByText('Vegetative')).toBeInTheDocument()
   })
 
   it('renders weekOfStage from plant data', () => {
-    render(<PlantDetailPage />)
+    renderPage()
     // StatTile renders "Week 3" (plant.weekOfStage = 3)
     expect(screen.getByText('Week 3')).toBeInTheDocument()
   })
