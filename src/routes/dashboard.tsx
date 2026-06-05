@@ -196,7 +196,7 @@ export default function DashboardPage() {
           <h2 id="stats-heading" className="sr-only">
             Garden statistics
           </h2>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             <button
               onClick={() => navigate('/garden')}
               className="text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg rounded-lg"

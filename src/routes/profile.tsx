@@ -70,7 +70,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-full">
+    <div className="mx-auto min-h-full w-full max-w-2xl">
       <AvatarHeader user={user} plants={plants} />
 
       <PrefsList
