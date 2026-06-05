@@ -6,11 +6,10 @@ interface NotifDrawerCtx {
   close:   () => void
 }
 
-const NotifDrawerContext = createContext<NotifDrawerCtx>({
-  isOpen: false,
-  open:   () => {},
-  close:  () => {},
-})
+// `null` sentinel so `useNotificationDrawer` can fail loudly when a consumer
+// is rendered outside the provider (same pattern as `useAuth`), instead of
+// silently no-op'ing and hiding wiring bugs.
+const NotifDrawerContext = createContext<NotifDrawerCtx | null>(null)
 
 export function NotificationDrawerProvider({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false)
@@ -24,5 +23,11 @@ export function NotificationDrawerProvider({ children }: { children: ReactNode }
 }
 
 export function useNotificationDrawer() {
-  return useContext(NotifDrawerContext)
+  const ctx = useContext(NotifDrawerContext)
+  if (ctx === null) {
+    throw new Error(
+      'useNotificationDrawer must be used within a NotificationDrawerProvider',
+    )
+  }
+  return ctx
 }

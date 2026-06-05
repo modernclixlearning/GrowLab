@@ -5,10 +5,10 @@ interface FabActionCtx {
   register: (fn: (() => void) | null) => void
 }
 
-const FabActionContext = createContext<FabActionCtx>({
-  trigger:  () => {},
-  register: () => {},
-})
+// `null` sentinel so `useFabAction` can fail loudly when a consumer is
+// rendered outside the provider (same pattern as `useAuth`), instead of
+// silently no-op'ing and hiding FAB wiring bugs.
+const FabActionContext = createContext<FabActionCtx | null>(null)
 
 export function FabActionProvider({ children }: { children: ReactNode }) {
   const handlerRef = useRef<(() => void) | null>(null)
@@ -22,5 +22,9 @@ export function FabActionProvider({ children }: { children: ReactNode }) {
 }
 
 export function useFabAction() {
-  return useContext(FabActionContext)
+  const ctx = useContext(FabActionContext)
+  if (ctx === null) {
+    throw new Error('useFabAction must be used within a FabActionProvider')
+  }
+  return ctx
 }
