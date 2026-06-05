@@ -15,8 +15,11 @@
 
 import { Navigate, useNavigate } from 'react-router-dom'
 import { useEffect, useMemo, useState } from 'react'
-import { Leaf, Search, LogOut, Plus } from 'lucide-react'
+import { Leaf, Search, LogOut } from 'lucide-react'
 import { useAuth } from '@/lib/stores/auth'
+import { NotificationBadge } from '@/components/notifications/NotificationBadge'
+import { useNotificationDrawer } from '@/lib/stores/notification-drawer'
+import { useFabAction } from '@/lib/stores/fab-action'
 import { usePlants } from '@/lib/hooks/usePlants'
 import { useCareLogs } from '@/lib/hooks/useCareLogs'
 import { PlantCard } from '@/components/plants/PlantCard'
@@ -105,6 +108,14 @@ export default function GardenPage() {
   const [search, setSearch] = useState('')
   const [stageFilter, setStageFilter] = useState<StageFilter>('all')
   const [showAddModal, setShowAddModal] = useState(false)
+  const { open: openNotifications } = useNotificationDrawer()
+  const { register: registerFab } = useFabAction()
+
+  // Wire the BottomNav FAB to the AddPlantModal while Garden is mounted.
+  useEffect(() => {
+    registerFab(() => setShowAddModal(true))
+    return () => registerFab(null)
+  }, [registerFab])
 
   // When the user flips Basic↔Expert in Profile, the previously-selected
   // filter may no longer be a valid pill (e.g., 'flowering' isn't a
@@ -187,14 +198,7 @@ export default function GardenPage() {
             >
               {user?.name || user?.email}
             </span>
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="inline-flex items-center gap-1.5 rounded-md bg-accent px-3 py-2 text-sm font-semibold text-bg shadow-accent-glow transition-transform hover:scale-[1.02] focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
-              aria-label="Add plant"
-            >
-              <Plus className="h-4 w-4" />
-              <span className="hidden sm:inline">Add</span>
-            </button>
+            <NotificationBadge onClick={openNotifications} />
             <button
               onClick={handleLogout}
               className="rounded-md border border-line bg-card p-2 text-fg-2 transition-colors hover:bg-card-2 hover:text-fg focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
@@ -294,7 +298,6 @@ export default function GardenPage() {
                 onClick={() => setShowAddModal(true)}
                 className="inline-flex items-center gap-2 rounded-md bg-accent px-4 py-2.5 text-sm font-semibold text-bg shadow-accent-glow transition-transform hover:scale-[1.02] focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
               >
-                <Plus className="h-4 w-4" />
                 Add Your First Plant
               </button>
             )}

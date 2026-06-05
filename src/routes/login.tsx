@@ -7,7 +7,7 @@
  * the CLAUDE.md UI Feedback Standard.
  */
 
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -142,12 +142,12 @@ export default function LoginPage() {
           {/* Register link */}
           <div className="mt-6 text-center text-sm">
             <span className="text-fg-3">No account? </span>
-            <a
-              href="/register"
+            <Link
+              to="/register"
               className="font-medium text-accent transition-colors hover:text-fg"
             >
               Create one
-            </a>
+            </Link>
           </div>
         </div>
       </div>

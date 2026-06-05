@@ -50,11 +50,15 @@ exportRoutes.get('/', async (c) => {
     })
 
     const dateStr = now.toISOString().slice(0, 10)
-    return new Response(zip, {
+    // fflate types `zip` as `Uint8Array<ArrayBufferLike>`, which the DOM
+    // `BodyInit` type (TS 5.7+) does not accept. Re-wrap into a plain
+    // `Uint8Array<ArrayBuffer>` so the Response body is correctly typed.
+    const body = new Uint8Array(zip)
+    return new Response(body, {
       headers: {
         'Content-Type': 'application/zip',
         'Content-Disposition': `attachment; filename="growlab-export-${dateStr}.zip"`,
-        'Content-Length': String(zip.byteLength),
+        'Content-Length': String(body.byteLength),
       },
     })
   } catch (error) {

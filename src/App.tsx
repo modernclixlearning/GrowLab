@@ -1,5 +1,5 @@
 import { Routes, Route } from 'react-router-dom'
-import { AppShell } from '@/components/shell'
+import { AppShell, type AppShellProps } from '@/components/shell'
 import HomePage from './routes/index'
 import LoginPage from './routes/login'
 import RegisterPage from './routes/register'
@@ -14,8 +14,11 @@ import SchedulePage from './routes/schedule'
  * Auth screens (login / register) and the public landing skip the shell
  * to remain full-bleed.
  */
-function Shelled({ children }: { children: React.ReactNode }) {
-  return <AppShell>{children}</AppShell>
+function Shelled({
+  children,
+  ...props
+}: { children: React.ReactNode } & Omit<AppShellProps, 'children'>) {
+  return <AppShell {...props}>{children}</AppShell>
 }
 
 export default function App() {
@@ -38,7 +41,7 @@ export default function App() {
       <Route
         path="/garden"
         element={
-          <Shelled>
+          <Shelled showAbsoluteBell={false}>
             <GardenPage />
           </Shelled>
         }
@@ -46,7 +49,7 @@ export default function App() {
       <Route
         path="/plants/:plantId"
         element={
-          <Shelled>
+          <Shelled showAbsoluteBell={false}>
             <PlantDetailPage />
           </Shelled>
         }
