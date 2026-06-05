@@ -32,6 +32,9 @@ import { useGrowthMeasurements } from '@/lib/hooks/useGrowth'
 import { useStrainTemplates } from '@/lib/hooks/useStrainTemplates'
 import { CareLogList } from '@/components/care-logs/CareLogList'
 import { PlantPDFButton } from '@/components/export/PlantPDFButton'
+import { UploadZone } from '@/components/plants/UploadZone'
+import { NotificationBadge } from '@/components/notifications/NotificationBadge'
+import { useNotificationDrawer } from '@/lib/stores/notification-drawer'
 import { LightCyclePill } from '@/components/plants/LightCyclePill'
 import { PhotoTimeline } from '@/components/plants/PhotoTimeline'
 import { HumidityWidget } from '@/components/plants/HumidityWidget'
@@ -107,6 +110,7 @@ export default function PlantDetailPage() {
   const updatePlant = useUpdatePlant()
   const deletePlant = useDeletePlant()
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const { open: openNotifications } = useNotificationDrawer()
 
   // Redirect to login without calling navigate() during render — using the
   // <Navigate> element keeps the render pure.
@@ -226,6 +230,7 @@ export default function PlantDetailPage() {
             <ArrowLeft className="h-5 w-5" />
           </button>
           <div className="flex items-center gap-2">
+            <NotificationBadge onClick={openNotifications} />
             <PlantPDFButton
               plant={plant}
               careLogs={pdfCareLogsData?.careLogs ?? []}
@@ -370,6 +375,12 @@ export default function PlantDetailPage() {
             <p className="whitespace-pre-wrap text-sm text-fg-2">{plant.notes}</p>
           </div>
         )}
+
+        {/* Add Photo — immediate upload to this existing plant */}
+        <section>
+          <H2 className="mb-3 text-[18px]">Add Photo</H2>
+          <UploadZone mode="immediate" plantId={plant.id} stage={stage} />
+        </section>
 
         {/* Photo Timeline (F4) */}
         <PhotoTimeline plantId={plant.id} />

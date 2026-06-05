@@ -24,12 +24,17 @@
  *   the scrollable content (e.g. screen title row, action icons).
  */
 
-import { useState, type ReactNode } from 'react'
+import { type ReactNode } from 'react'
 import { BottomNav } from './BottomNav'
 import { useAuth } from '@/lib/stores/auth'
 import { StageModeOnboarding } from '@/components/onboarding/StageModeOnboarding'
 import { NotificationBadge } from '@/components/notifications/NotificationBadge'
 import { NotificationDrawer } from '@/components/notifications/NotificationDrawer'
+import {
+  NotificationDrawerProvider,
+  useNotificationDrawer,
+} from '@/lib/stores/notification-drawer'
+import { FabActionProvider, useFabAction } from '@/lib/stores/fab-action'
 
 export interface AppShellProps {
   children: ReactNode
@@ -39,16 +44,25 @@ export interface AppShellProps {
   hideBottomNav?: boolean
   /** Override the FAB click handler. F0 default is a no-op. */
   onFabClick?: () => void
+  /**
+   * Render the absolutely-positioned notification bell in the top-right
+   * corner. Defaults to true. Screens that render their own inline bell
+   * (Garden, PlantDetail) pass `false` to avoid a duplicate.
+   */
+  showAbsoluteBell?: boolean
 }
 
-export function AppShell({
+function AppShellInner({
   children,
   header,
   hideBottomNav = false,
   onFabClick,
+  showAbsoluteBell = true,
 }: AppShellProps) {
   const { user, isAuthenticated } = useAuth()
-  const [notifOpen, setNotifOpen] = useState(false)
+  const { isOpen: notifOpen, open: openNotif, close: closeNotif } =
+    useNotificationDrawer()
+  const { trigger: fabTrigger } = useFabAction()
 
   const showOnboarding =
     isAuthenticated && user !== null && user.hasOnboarded === false
@@ -58,9 +72,9 @@ export function AppShell({
       {/* Outer centering for desktop / large screens, mobile-first inside */}
       <div className="relative mx-auto flex h-dvh w-full max-w-[412px] flex-col overflow-hidden bg-bg">
         {/* Notification badge in top-right corner for authenticated users */}
-        {isAuthenticated && (
+        {isAuthenticated && showAbsoluteBell && (
           <div className="absolute right-3 top-3 z-20">
-            <NotificationBadge onClick={() => setNotifOpen(true)} />
+            <NotificationBadge onClick={openNotif} />
           </div>
         )}
         {header ? <div className="relative z-20 flex-shrink-0">{header}</div> : null}
@@ -77,11 +91,21 @@ export function AppShell({
           {children}
         </div>
 
-        {!hideBottomNav && <BottomNav onFabClick={onFabClick} />}
+        {!hideBottomNav && <BottomNav onFabClick={onFabClick ?? fabTrigger} />}
       </div>
 
       {showOnboarding && <StageModeOnboarding />}
-      <NotificationDrawer open={notifOpen} onClose={() => setNotifOpen(false)} />
+      <NotificationDrawer open={notifOpen} onClose={closeNotif} />
     </div>
+  )
+}
+
+export function AppShell(props: AppShellProps) {
+  return (
+    <NotificationDrawerProvider>
+      <FabActionProvider>
+        <AppShellInner {...props} />
+      </FabActionProvider>
+    </NotificationDrawerProvider>
   )
 }
