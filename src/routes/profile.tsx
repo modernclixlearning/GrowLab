@@ -74,6 +74,13 @@ export default function ProfilePage() {
 
   return (
     <div className="mx-auto min-h-full w-full max-w-2xl">
+      {/* Notification bell — top-right, consistent with all other screens.
+          No heading needed here: AvatarHeader already renders the page
+          identity (Eyebrow "Profile" + H1 user.name). */}
+      <div className="flex justify-end px-4 pt-4">
+        <NotificationBadge onClick={openNotifications} />
+      </div>
+
       <AvatarHeader user={user} plants={plants} />
 
       <PrefsList
@@ -100,17 +107,14 @@ export default function ProfilePage() {
 
       <section className="px-5 pb-10">
         <H2 className="sr-only">Account</H2>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="inline-flex flex-1 items-center justify-center gap-2 rounded-md border border-line bg-card px-4 py-3 text-sm font-semibold text-status-warn transition-colors hover:bg-status-warn/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-status-warn focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
-          >
-            <LogOut className="h-4 w-4" />
-            Sign out
-          </button>
-          <NotificationBadge onClick={openNotifications} />
-        </div>
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-line bg-card px-4 py-3 text-sm font-semibold text-status-warn transition-colors hover:bg-status-warn/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-status-warn focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+        >
+          <LogOut className="h-4 w-4" />
+          Sign out
+        </button>
       </section>
 
       <TentModal

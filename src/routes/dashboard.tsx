@@ -219,41 +219,24 @@ export default function DashboardPage() {
             Garden statistics
           </h2>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-            <button
-              onClick={() => navigate('/garden')}
-              className="text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg rounded-lg"
-            >
-              <StatCard
-                label="Active Plants"
-                value={stats.active}
-                tone="accent"
-                icon={<Activity className="h-5 w-5" />}
-                sub={`${stats.total} TOTAL`}
-              />
-            </button>
-            <StatCard
-              label="Total Plants"
-              value={totalPlants}
-              tone="veg"
-              icon={<TreePine className="h-5 w-5" />}
-              sub={
-                totalPlants > 0
-                  ? `${seedlings} SEED · ${stats.flowering} FLR`
-                  : 'EMPTY GARDEN'
-              }
-            />
-            <StatCard
-              label="Seedlings"
-              value={seedlings}
-              tone="seedling"
-              icon={<Sprout className="h-5 w-5" />}
-            />
-            <StatCard
-              label="Flowering"
-              value={stats.flowering}
-              tone="flower"
-              icon={<Leaf className="h-5 w-5" />}
-            />
+            {(
+              [
+                { label: 'Active Plants', value: stats.active, tone: 'accent' as const, icon: <Activity className="h-5 w-5" />, sub: `${stats.total} TOTAL`, filter: undefined },
+                { label: 'Total Plants', value: totalPlants, tone: 'veg' as const, icon: <TreePine className="h-5 w-5" />, sub: totalPlants > 0 ? `${seedlings} SEED · ${stats.flowering} FLR` : 'EMPTY GARDEN', filter: undefined },
+                { label: 'Seedlings', value: seedlings, tone: 'seedling' as const, icon: <Sprout className="h-5 w-5" />, sub: undefined, filter: 'seedling' },
+                { label: 'Flowering', value: stats.flowering, tone: 'flower' as const, icon: <Leaf className="h-5 w-5" />, sub: undefined, filter: 'flowering' },
+              ] as const
+            ).map(({ label, value, tone, icon, sub, filter }) => (
+              <button
+                type="button"
+                key={label}
+                onClick={() => navigate('/garden', filter ? { state: { stageFilter: filter } } : undefined)}
+                className="text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg rounded-lg"
+                aria-label={`${label}: ${value}${filter ? ` — view in garden` : ''}`}
+              >
+                <StatCard label={label} value={value} tone={tone} icon={icon} sub={sub} />
+              </button>
+            ))}
           </div>
         </section>
 

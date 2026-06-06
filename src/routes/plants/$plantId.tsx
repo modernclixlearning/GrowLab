@@ -261,9 +261,6 @@ export default function PlantDetailPage() {
           <p className="mt-2 font-mono text-[11px] uppercase tracking-eyebrow text-fg-3">
             ID · GL-{idShort} · PLANTED {formatDate(plant.createdAt)}
           </p>
-          <p className="mt-1 font-mono text-[11px] uppercase tracking-eyebrow text-fg-3">
-            {displayStrain.toUpperCase()}
-          </p>
         </div>
 
         {/* Placeholder when no photo */}

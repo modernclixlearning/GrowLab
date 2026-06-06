@@ -13,8 +13,8 @@
  *   - Per-plant `careTag` is derived in the parent and passed to `<PlantCard>`.
  */
 
-import { Navigate, useNavigate } from 'react-router-dom'
-import { useEffect, useLayoutEffect, useMemo, useState } from 'react'
+import { Navigate, useNavigate, useLocation } from 'react-router-dom'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Leaf, Search, LogOut } from 'lucide-react'
 import { useAuth } from '@/lib/stores/auth'
 import { NotificationBadge } from '@/components/notifications/NotificationBadge'
@@ -33,7 +33,7 @@ import {
   BASIC_STAGE_LABEL,
   type BasicStage,
 } from '@/lib/stage-mapping'
-import type { Plant } from '@/types/plants'
+import type { Plant, GrowthStage } from '@/types/plants'
 import { STRAIN_TYPE_CONFIG, GROWTH_STAGE_CONFIG } from '@/types/plants'
 import type { StageMode } from '@/types/auth'
 
@@ -103,10 +103,28 @@ function PlantCardWithCareTag({
 
 export default function GardenPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { user, isAuthenticated, isLoading: authLoading, logout } = useAuth()
   const stageMode: StageMode = user?.stageMode ?? 'expert'
   const [search, setSearch] = useState('')
-  const [stageFilter, setStageFilter] = useState<StageFilter>('all')
+  // Allow Dashboard stat tiles to navigate here with a pre-selected filter
+  // via react-router location.state so the URL stays clean.
+  // Only Expert-only GrowthStage values ('vegetative', 'flowering', etc.)
+  // need coercion in Basic mode. 'all', Basic buckets ('veg', 'flower',
+  // 'harvest') and 'seedling' are already valid and must pass through
+  // unchanged — passing them into expertToBasic() would return undefined.
+  const EXPERT_ONLY_STAGES = new Set([
+    'vegetative', 'flowering', 'harvesting', 'drying', 'curing', 'completed',
+  ])
+  const [stageFilter, setStageFilter] = useState<StageFilter>(() => {
+    const raw = (location.state as { stageFilter?: StageFilter } | null)?.stageFilter
+    if (!raw) return 'all'
+    const effectiveMode = user?.stageMode ?? 'expert'
+    if (effectiveMode === 'basic' && EXPERT_ONLY_STAGES.has(raw)) {
+      return expertToBasic(raw as GrowthStage)
+    }
+    return raw
+  })
   const [showAddModal, setShowAddModal] = useState(false)
   const { open: openNotifications } = useNotificationDrawer()
   const { register: registerFab } = useFabAction()
@@ -119,13 +137,33 @@ export default function GardenPage() {
     return () => registerFab(null)
   }, [registerFab])
 
-  // When the user flips Basic↔Expert in Profile, the previously-selected
-  // filter may no longer be a valid pill (e.g., 'flowering' isn't a
-  // Basic bucket). Reset to 'all' on stageMode change so the UI never
-  // ends up with an orphan filter that hides every plant.
+  // When stageMode changes we need to handle two distinct cases:
+  //
+  // 1. Auth completing (authLoading true→false): stageMode was temporarily
+  //    'expert' while user=null; now it's the real value. The initializer
+  //    ran with user=null so it may have kept an Expert stage that's invalid
+  //    in Basic mode. Coerce the filter — don't reset to 'all'.
+  //
+  // 2. User intentionally toggles Basic↔Expert in Profile (auth already done):
+  //    the current filter may no longer be a valid pill. Reset to 'all'.
+  //
+  // Gate: skip while authLoading to avoid double-firing.
+  const isInitialAuthRef = useRef(true)
   useEffect(() => {
+    if (authLoading) return
+    if (isInitialAuthRef.current) {
+      isInitialAuthRef.current = false
+      // First time auth completes: coerce Expert stages to Basic bucket if needed.
+      if (stageMode === 'basic') {
+        setStageFilter(prev =>
+          EXPERT_ONLY_STAGES.has(prev) ? expertToBasic(prev as GrowthStage) : prev
+        )
+      }
+      return
+    }
+    // Subsequent mode change by the user — reset filter.
     setStageFilter('all')
-  }, [stageMode])
+  }, [stageMode, authLoading])
 
   // Fetch the full plant list once and apply filters client-side so the
   // SystemPulse counts always reflect the unfiltered totals while the
