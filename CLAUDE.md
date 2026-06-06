@@ -49,9 +49,10 @@ pnpm typecheck     # TypeScript check sin emit
 ## Project Rules
 
 1. No modificar archivos de configuración (`.env`, archivos de infra) sin aprobación explícita.
-2. No hacer commits directamente a `main`; crear una rama descriptiva.
-3. Mantener los tests pasando antes de proponer un PR.
-4. Seguir las convenciones de nombrado ya establecidas en el código existente.
+2. No hacer commits directamente a `main`; crear una rama descriptiva con prefijo `claude/`.
+3. **Todo PR apunta siempre a `main` como base.** No usar stacked PRs (PR → feature branch → main): este repo usa squash merge, que borra los SHAs originales y hace que las ramas base queden "fantasma" después del merge. Si un cambio depende de otro PR sin mergear, esperar a que se mergee primero.
+4. Mantener los tests pasando antes de proponer un PR.
+5. Seguir las convenciones de nombrado ya establecidas en el código existente.
 
 ---
 
