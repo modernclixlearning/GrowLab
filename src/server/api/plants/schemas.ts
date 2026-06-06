@@ -5,7 +5,7 @@
  */
 
 import { z } from 'zod'
-import { GROWTH_STAGES, HEALTH_STATUSES, STRAIN_TYPES } from '@/server/db/schema/plants'
+import { GROWTH_STAGES, HEALTH_STATUSES, STRAIN_TYPES, FLOWERING_TYPES } from '@/server/db/schema/plants'
 
 /**
  * Schema for `stage_duration_override` jsonb. Each key is optional and
@@ -37,6 +37,9 @@ export const createPlantSchema = z.object({
   strainType: z.enum(STRAIN_TYPES, {
     errorMap: () => ({ message: `Strain type must be one of: ${STRAIN_TYPES.join(', ')}` }),
   }),
+  floweringType: z.enum(FLOWERING_TYPES, {
+    errorMap: () => ({ message: `Flowering type must be one of: ${FLOWERING_TYPES.join(', ')}` }),
+  }).default('photoperiod'),
   growthStage: z.enum(GROWTH_STAGES, {
     errorMap: () => ({ message: `Growth stage must be one of: ${GROWTH_STAGES.join(', ')}` }),
   }).default('seedling'),
@@ -66,6 +69,9 @@ export const updatePlantSchema = z.object({
     .optional(),
   strainType: z.enum(STRAIN_TYPES, {
     errorMap: () => ({ message: `Strain type must be one of: ${STRAIN_TYPES.join(', ')}` }),
+  }).optional(),
+  floweringType: z.enum(FLOWERING_TYPES, {
+    errorMap: () => ({ message: `Flowering type must be one of: ${FLOWERING_TYPES.join(', ')}` }),
   }).optional(),
   growthStage: z.enum(GROWTH_STAGES, {
     errorMap: () => ({ message: `Growth stage must be one of: ${GROWTH_STAGES.join(', ')}` }),

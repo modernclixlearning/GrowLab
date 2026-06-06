@@ -39,10 +39,11 @@ import { useUploadPhoto } from '@/lib/hooks/usePlantPhotos'
 import { getApiErrorToastMessage } from '@/lib/api/errors'
 import { Stepper } from '@/components/ui/Stepper'
 import { UploadZone } from '@/components/plants/UploadZone'
-import type { GrowthStage, StrainType } from '@/types/plants'
+import type { GrowthStage, StrainType, FloweringType } from '@/types/plants'
 import {
   GROWTH_STAGE_CONFIG,
   STRAIN_TYPE_CONFIG,
+  FLOWERING_TYPE_CONFIG,
 } from '@/types/plants'
 
 /** Stages a user may select when creating a plant (excluding `completed`). */
@@ -75,6 +76,7 @@ interface FormState {
   photoUrl: string
   name: string
   strainType: StrainType | ''
+  floweringType: FloweringType
   growthStage: GrowthStage
 }
 
@@ -82,6 +84,7 @@ const INITIAL: FormState = {
   photoUrl: '',
   name: '',
   strainType: '',
+  floweringType: 'photoperiod',
   growthStage: 'seedling',
 }
 
@@ -151,6 +154,7 @@ export function AddPlantModal({ isOpen, onClose, onSuccess }: AddPlantModalProps
       const plant = await createPlant.mutateAsync({
         name: form.name.trim(),
         strainType: form.strainType,
+        floweringType: form.floweringType,
         growthStage: form.growthStage,
       })
 
@@ -362,9 +366,9 @@ function Step2Details({
 
       <div>
         <label className="mb-2 block font-mono text-[11px] font-semibold uppercase tracking-eyebrow text-fg-2">
-          Strain Type
+          Genetics
         </label>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-3 gap-2">
           {(Object.entries(STRAIN_TYPE_CONFIG) as [StrainType, { label: string }][]).map(
             ([value, config]) => {
               const active = form.strainType === value
@@ -387,8 +391,37 @@ function Step2Details({
             },
           )}
         </div>
+      </div>
+
+      <div>
+        <label className="mb-2 block font-mono text-[11px] font-semibold uppercase tracking-eyebrow text-fg-2">
+          Flowering
+        </label>
+        <div className="grid grid-cols-2 gap-2">
+          {(Object.entries(FLOWERING_TYPE_CONFIG) as [FloweringType, { label: string }][]).map(
+            ([value, config]) => {
+              const active = form.floweringType === value
+              return (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => update('floweringType', value)}
+                  aria-pressed={active}
+                  className={[
+                    'rounded-md border-2 px-4 py-3 text-left text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg',
+                    active
+                      ? 'border-accent bg-accent-soft text-accent'
+                      : 'border-line bg-card-2 text-fg hover:bg-card',
+                  ].join(' ')}
+                >
+                  {config.label}
+                </button>
+              )
+            },
+          )}
+        </div>
         <p className="mt-2 text-xs text-fg-3">
-          Strain catalog with named templates lands in F2.
+          Genetics and flowering are independent: an Auto can be Indica, Sativa, or Hybrid.
         </p>
       </div>
     </div>

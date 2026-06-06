@@ -26,6 +26,7 @@ const mockPlant: Plant = {
   userId: 'u1',
   name: 'OG Kush #1',
   strainType: 'indica',
+  floweringType: 'photoperiod',
   growthStage: 'vegetative',
   stageStartDate: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
   healthStatus: 'healthy',

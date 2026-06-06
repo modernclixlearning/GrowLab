@@ -12,6 +12,7 @@ function makePlant(id: string, growthStage: GrowthStage): Plant {
     userId: 'user-1',
     name: `Plant ${id}`,
     strainType: 'indica',
+    floweringType: 'photoperiod',
     growthStage,
     stageStartDate: '2026-01-01T00:00:00.000Z',
     healthStatus: 'healthy',
