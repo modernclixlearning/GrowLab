@@ -14,7 +14,7 @@
  */
 
 import { Navigate, useNavigate } from 'react-router-dom'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import { Leaf, Search, LogOut } from 'lucide-react'
 import { useAuth } from '@/lib/stores/auth'
 import { NotificationBadge } from '@/components/notifications/NotificationBadge'
@@ -111,8 +111,10 @@ export default function GardenPage() {
   const { open: openNotifications } = useNotificationDrawer()
   const { register: registerFab } = useFabAction()
 
-  // Wire the BottomNav FAB to the AddPlantModal while Garden is mounted.
-  useEffect(() => {
+  // useLayoutEffect (not useEffect) so the handler is installed before the
+  // first paint — avoids a visible FAB flicker on mount and prevents stale
+  // handlers from firing during route transitions.
+  useLayoutEffect(() => {
     registerFab(() => setShowAddModal(true))
     return () => registerFab(null)
   }, [registerFab])

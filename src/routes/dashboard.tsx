@@ -9,7 +9,7 @@
  */
 
 import { useNavigate } from 'react-router-dom'
-import { useEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useState } from 'react'
 import {
   Leaf,
   LogOut,
@@ -89,8 +89,10 @@ export default function DashboardPage() {
   const { open: openNotifications } = useNotificationDrawer()
   const { register: registerFab } = useFabAction()
 
-  // Wire the BottomNav FAB to AddPlantModal while Dashboard is mounted.
-  useEffect(() => {
+  // useLayoutEffect (not useEffect) so the handler is installed before the
+  // first paint — avoids a visible FAB flicker on mount and prevents stale
+  // handlers from firing during route transitions.
+  useLayoutEffect(() => {
     registerFab(() => setShowAddModal(true))
     return () => registerFab(null)
   }, [registerFab])
