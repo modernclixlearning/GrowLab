@@ -70,6 +70,14 @@ export function EditPlantModal({ plant, isOpen, onClose, onSuccess }: EditPlantM
 
   const handleClose = () => {
     setFormError(null)
+    // Reset to persisted plant values so re-opening always shows current data,
+    // not the in-progress edits the user abandoned.
+    setForm({
+      name: plant.name,
+      strainType: plant.strainType,
+      healthStatus: plant.healthStatus,
+      notes: plant.notes ?? '',
+    })
     onClose()
   }
 

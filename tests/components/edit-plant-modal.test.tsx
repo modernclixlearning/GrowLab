@@ -89,6 +89,31 @@ describe('EditPlantModal — validation', () => {
   })
 })
 
+describe('EditPlantModal — stale state regression', () => {
+  it('resets form to plant values after closing with unsaved edits', async () => {
+    const user = userEvent.setup()
+    const onClose = vi.fn()
+    const { rerender } = render(
+      <EditPlantModal plant={mockPlant} isOpen={true} onClose={onClose} />,
+    )
+
+    // Make a dirty edit without saving
+    const nameInput = screen.getByLabelText(/plant name/i)
+    await user.clear(nameInput)
+    await user.type(nameInput, 'Unsaved Name')
+
+    // Close via the footer Cancel button (type="button" distinguishes it from the X icon)
+    const cancelButtons = screen.getAllByRole('button', { name: /cancel/i })
+    await user.click(cancelButtons[cancelButtons.length - 1])
+
+    // Reopen the modal
+    rerender(<EditPlantModal plant={mockPlant} isOpen={true} onClose={onClose} />)
+
+    // Must show the original plant name, not the unsaved edit
+    expect(screen.getByLabelText(/plant name/i)).toHaveValue(mockPlant.name)
+  })
+})
+
 describe('EditPlantModal — submission', () => {
   it('calls updatePlant with updated name on save', async () => {
     mockMutateAsync.mockResolvedValueOnce({ ...mockPlant, name: 'New Name' })
