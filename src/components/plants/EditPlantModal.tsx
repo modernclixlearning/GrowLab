@@ -50,7 +50,10 @@ export function EditPlantModal({ plant, isOpen, onClose, onSuccess }: EditPlantM
   })
   const [formError, setFormError] = useState<string | null>(null)
 
-  // Sync form when plant changes (e.g., navigating between plants)
+  // Sync form to current plant values when the plant changes OR when the modal
+  // closes (isOpen false→true cycle). Adding isOpen ensures abandoned edits are
+  // discarded when the parent closes the modal, regardless of which code path
+  // triggered the close (Cancel button, backdrop click, programmatic close).
   useEffect(() => {
     setForm({
       name: plant.name,
@@ -59,7 +62,7 @@ export function EditPlantModal({ plant, isOpen, onClose, onSuccess }: EditPlantM
       notes: plant.notes ?? '',
     })
     setFormError(null)
-  }, [plant.id, plant.name, plant.strainType, plant.healthStatus, plant.notes])
+  }, [plant.id, plant.name, plant.strainType, plant.healthStatus, plant.notes, isOpen])
 
   if (!isOpen) return null
 

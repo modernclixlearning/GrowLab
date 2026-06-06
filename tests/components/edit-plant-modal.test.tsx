@@ -102,14 +102,15 @@ describe('EditPlantModal — stale state regression', () => {
     await user.clear(nameInput)
     await user.type(nameInput, 'Unsaved Name')
 
-    // Close via the footer Cancel button (type="button" distinguishes it from the X icon)
-    const cancelButtons = screen.getAllByRole('button', { name: /cancel/i })
-    await user.click(cancelButtons[cancelButtons.length - 1])
+    // Simulate the parent closing the modal (isOpen=false). The Cancel button
+    // calls onClose() and the parent controls isOpen — we mirror that here so
+    // the test exercises the actual open/close/reopen cycle, not just a rerender
+    // with the same isOpen=true (which would never trigger the reset).
+    rerender(<EditPlantModal plant={mockPlant} isOpen={false} onClose={onClose} />)
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
 
-    // Reopen the modal
+    // Reopen — must show the original plant name, not the unsaved edit
     rerender(<EditPlantModal plant={mockPlant} isOpen={true} onClose={onClose} />)
-
-    // Must show the original plant name, not the unsaved edit
     expect(screen.getByLabelText(/plant name/i)).toHaveValue(mockPlant.name)
   })
 })
