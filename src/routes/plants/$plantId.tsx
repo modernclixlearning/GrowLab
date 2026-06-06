@@ -20,6 +20,7 @@ import {
   Leaf,
   ArrowLeft,
   Trash2,
+  Pencil,
   ChevronRight,
   Calendar,
   Clock,
@@ -33,6 +34,7 @@ import { useStrainTemplates } from '@/lib/hooks/useStrainTemplates'
 import { CareLogList } from '@/components/care-logs/CareLogList'
 import { PlantPDFButton } from '@/components/export/PlantPDFButton'
 import { UploadZone } from '@/components/plants/UploadZone'
+import { EditPlantModal } from '@/components/plants/EditPlantModal'
 import { NotificationBadge } from '@/components/notifications/NotificationBadge'
 import { useNotificationDrawer } from '@/lib/stores/notification-drawer'
 import { LightCyclePill } from '@/components/plants/LightCyclePill'
@@ -110,6 +112,7 @@ export default function PlantDetailPage() {
   const updatePlant = useUpdatePlant()
   const deletePlant = useDeletePlant()
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
   const { open: openNotifications } = useNotificationDrawer()
 
   // Redirect to login without calling navigate() during render — using the
@@ -236,6 +239,13 @@ export default function PlantDetailPage() {
               careLogs={pdfCareLogsData?.careLogs ?? []}
               growthMeasurements={growthData?.measurements ?? []}
             />
+            <button
+              onClick={() => setShowEditModal(true)}
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-line bg-bg/60 text-fg-2 backdrop-blur transition-colors hover:bg-accent/20 hover:text-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+              aria-label="Edit plant"
+            >
+              <Pencil className="h-5 w-5" />
+            </button>
             <button
               onClick={() => setShowDeleteConfirm(true)}
               className="flex h-10 w-10 items-center justify-center rounded-full border border-line bg-bg/60 text-fg-2 backdrop-blur transition-colors hover:bg-status-warn/30 hover:text-status-warn focus:outline-none focus-visible:ring-2 focus-visible:ring-status-warn focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
@@ -433,6 +443,13 @@ export default function PlantDetailPage() {
           </div>
         </div>
       )}
+
+      {/* Edit Plant Modal */}
+      <EditPlantModal
+        plant={plant}
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+      />
     </div>
   )
 }
