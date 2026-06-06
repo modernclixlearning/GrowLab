@@ -9,7 +9,7 @@
  */
 
 import { useNavigate } from 'react-router-dom'
-import { useEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useState } from 'react'
 import {
   Leaf,
   LogOut,
@@ -20,6 +20,9 @@ import {
   CalendarCheck,
 } from 'lucide-react'
 import { useAuth } from '@/lib/stores/auth'
+import { NotificationBadge } from '@/components/notifications/NotificationBadge'
+import { useNotificationDrawer } from '@/lib/stores/notification-drawer'
+import { useFabAction } from '@/lib/stores/fab-action'
 import { usePlants } from '@/lib/hooks/usePlants'
 import { useCareLogs, useScheduledCareLogs, useCompleteCareLog } from '@/lib/hooks/useCareLogs'
 import { useSensorDevices } from '@/lib/hooks/useSensors'
@@ -83,6 +86,16 @@ export default function DashboardPage() {
     limit: 100,
   })
   const [showAddModal, setShowAddModal] = useState(false)
+  const { open: openNotifications } = useNotificationDrawer()
+  const { register: registerFab } = useFabAction()
+
+  // useLayoutEffect (not useEffect) so the handler is installed before the
+  // first paint — avoids a visible FAB flicker on mount and prevents stale
+  // handlers from firing during route transitions.
+  useLayoutEffect(() => {
+    registerFab(() => setShowAddModal(true))
+    return () => registerFab(null)
+  }, [registerFab])
 
   // ── Data hooks ──────────────────────────────────────────────────────────
   // All hooks MUST run before the early returns below; calling hooks after a
@@ -170,13 +183,16 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <button
-            onClick={handleLogout}
-            className="rounded-md border border-line bg-card p-2 text-fg-2 transition-colors hover:bg-card-2 hover:text-fg focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
-            aria-label="Logout"
-          >
-            <LogOut className="h-5 w-5" />
-          </button>
+          <div className="flex items-center gap-1">
+            <NotificationBadge onClick={openNotifications} />
+            <button
+              onClick={handleLogout}
+              className="rounded-md border border-line bg-card p-2 text-fg-2 transition-colors hover:bg-card-2 hover:text-fg focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+              aria-label="Logout"
+            >
+              <LogOut className="h-5 w-5" />
+            </button>
+          </div>
         </div>
       </header>
 

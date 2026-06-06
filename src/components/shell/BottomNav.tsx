@@ -41,11 +41,14 @@ export interface BottomNavProps {
   onFabClick?: () => void
   /** Aria label for the FAB (defaults to "Add Plant"). */
   fabLabel?: string
+  /** Hide the FAB (invisible + non-interactive) while preserving layout. */
+  hideFab?: boolean
 }
 
 export function BottomNav({
   onFabClick,
   fabLabel = 'Add Plant',
+  hideFab = false,
 }: BottomNavProps) {
   const navigate = useNavigate()
   const location = useLocation()
@@ -80,7 +83,11 @@ export function BottomNav({
           onClick={() => handleNavigate(item)}
         />
       ))}
-      <Fab label={fabLabel} onClick={handleFab} />
+      <Fab
+        label={fabLabel}
+        onClick={handleFab}
+        className={hideFab ? 'invisible pointer-events-none' : ''}
+      />
       {right.map((item) => (
         <NavButton
           key={item.key}

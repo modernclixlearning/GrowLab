@@ -41,7 +41,7 @@ export default function App() {
       <Route
         path="/garden"
         element={
-          <Shelled showAbsoluteBell={false}>
+          <Shelled>
             <GardenPage />
           </Shelled>
         }
@@ -49,7 +49,7 @@ export default function App() {
       <Route
         path="/plants/:plantId"
         element={
-          <Shelled showAbsoluteBell={false}>
+          <Shelled>
             <PlantDetailPage />
           </Shelled>
         }
