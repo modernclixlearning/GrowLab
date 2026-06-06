@@ -9,15 +9,14 @@
  *
  * Auth screens (login/register) bypass AppShell to remain full-bleed.
  *
- * Layout:
- * - The shell pins itself to the dynamic viewport height (`h-dvh`) so the
- *   BottomNav stays anchored to the bottom on long content (e.g. Garden
- *   list). Internal scrolling happens inside the content area, never on
- *   the page itself — this prevents the absolutely-positioned BottomNav
- *   from being pushed off-screen.
- * - Children render inside the scrollable area; the BottomNav remains
- *   absolutely positioned to preserve the gradient overlap from the
- *   prototype.
+ * Layout (responsive):
+ * - **Mobile (base)**: shell pins to `h-dvh`; scrolling is contained inside
+ *   the content div (`overflow-y-auto`) so the absolutely-positioned
+ *   BottomNav stays anchored at the bottom without being pushed off-screen.
+ * - **Desktop (md+)**: containers open up (`h-auto`, `overflow-visible`) and
+ *   the browser's native page scroll takes over — scrollbar appears at the
+ *   viewport edge. BottomNav switches to `fixed` so it stays anchored while
+ *   the page scrolls.
  * - The shell sets the dark page background (`bg-bg`) and default text
  *   color (`text-fg`) so consumers do not need to repeat them.
  * - `header` prop is optional — pass JSX to render a top chrome bar above
