@@ -46,13 +46,26 @@ pnpm typecheck     # TypeScript check sin emit
 
 ---
 
+## Branching Convention
+
+GrowLab es un proyecto **single-developer**. El flujo es:
+
+```
+develop  →  (PR)  →  main  →  Render deploy
+```
+
+- Todo el trabajo diario ocurre en la rama `develop`.
+- No se crean feature branches individuales (no `claude/growlab-*`, no `feat/*`).
+- Para deployar a producción: abrir un PR de `develop` → `main`, mergear.
+- No hacer squash merge si se quiere preservar el historial de `develop`; merge commit normal o fast-forward es preferible.
+- **No usar stacked PRs** (PR apuntando a feature branch en vez de `develop`): este repo usa squash en los PRs a `main`, lo que deja ramas base "fantasma".
+
 ## Project Rules
 
 1. No modificar archivos de configuración (`.env`, archivos de infra) sin aprobación explícita.
-2. No hacer commits directamente a `main`; crear una rama descriptiva con prefijo `claude/`.
-3. **Todo PR apunta siempre a `main` como base.** No usar stacked PRs (PR → feature branch → main): este repo usa squash merge, que borra los SHAs originales y hace que las ramas base queden "fantasma" después del merge. Si un cambio depende de otro PR sin mergear, esperar a que se mergee primero.
-4. Mantener los tests pasando antes de proponer un PR.
-5. Seguir las convenciones de nombrado ya establecidas en el código existente.
+2. No hacer commits directamente a `main`; trabajar en `develop`.
+3. Mantener los tests pasando antes de proponer un PR.
+4. Seguir las convenciones de nombrado ya establecidas en el código existente.
 
 ---
 
