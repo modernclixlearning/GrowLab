@@ -137,16 +137,33 @@ export default function GardenPage() {
     return () => registerFab(null)
   }, [registerFab])
 
-  // When the user flips Basic↔Expert in Profile the previously-selected filter
-  // may no longer be a valid pill. Reset to 'all' on stageMode change.
-  // Skip the initial mount: during auth loading stageMode starts as 'expert'
-  // (user=null), then flips to the real value — firing here would wipe the
-  // pre-filter navigated from Dashboard before the user sees it.
-  const isMountRef = useRef(true)
+  // When stageMode changes we need to handle two distinct cases:
+  //
+  // 1. Auth completing (authLoading true→false): stageMode was temporarily
+  //    'expert' while user=null; now it's the real value. The initializer
+  //    ran with user=null so it may have kept an Expert stage that's invalid
+  //    in Basic mode. Coerce the filter — don't reset to 'all'.
+  //
+  // 2. User intentionally toggles Basic↔Expert in Profile (auth already done):
+  //    the current filter may no longer be a valid pill. Reset to 'all'.
+  //
+  // Gate: skip while authLoading to avoid double-firing.
+  const isInitialAuthRef = useRef(true)
   useEffect(() => {
-    if (isMountRef.current) { isMountRef.current = false; return }
+    if (authLoading) return
+    if (isInitialAuthRef.current) {
+      isInitialAuthRef.current = false
+      // First time auth completes: coerce Expert stages to Basic bucket if needed.
+      if (stageMode === 'basic') {
+        setStageFilter(prev =>
+          EXPERT_ONLY_STAGES.has(prev) ? expertToBasic(prev as GrowthStage) : prev
+        )
+      }
+      return
+    }
+    // Subsequent mode change by the user — reset filter.
     setStageFilter('all')
-  }, [stageMode])
+  }, [stageMode, authLoading])
 
   // Fetch the full plant list once and apply filters client-side so the
   // SystemPulse counts always reflect the unfiltered totals while the

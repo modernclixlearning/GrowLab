@@ -228,6 +228,7 @@ export default function DashboardPage() {
               ] as const
             ).map(({ label, value, tone, icon, sub, filter }) => (
               <button
+                type="button"
                 key={label}
                 onClick={() => navigate('/garden', filter ? { state: { stageFilter: filter } } : undefined)}
                 className="text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg rounded-lg"
