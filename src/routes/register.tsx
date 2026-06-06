@@ -45,13 +45,16 @@ const labelBase = 'mb-2 block font-mono text-[11px] font-semibold uppercase trac
 
 export default function RegisterPage() {
   const navigate = useNavigate()
-  const { register: registerUser, isLoading } = useAuth()
+  const { register: registerUser } = useAuth()
   const [error, setError] = useState<string | null>(null)
 
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    // `isSubmitting` tracks only THIS form's async submit. Using the global
+    // auth `isLoading` here would leave the button stuck in "Creating
+    // account…" / disabled during the AuthProvider's initial session refresh.
+    formState: { errors, isSubmitting },
   } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
   })
@@ -188,10 +191,10 @@ export default function RegisterPage() {
 
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isSubmitting}
               className="inline-flex w-full items-center justify-center rounded-full bg-accent px-5 h-12 text-[15px] font-bold text-bg shadow-accent-glow transition-transform hover:scale-[1.01] focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg disabled:opacity-60 disabled:hover:scale-100"
             >
-              {isLoading ? 'Creating account...' : 'Create account'}
+              {isSubmitting ? 'Creating account...' : 'Create account'}
             </button>
           </form>
 

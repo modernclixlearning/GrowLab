@@ -33,13 +33,16 @@ const labelBase = 'mb-2 block font-mono text-[11px] font-semibold uppercase trac
 
 export default function LoginPage() {
   const navigate = useNavigate()
-  const { login, isLoading } = useAuth()
+  const { login } = useAuth()
   const [error, setError] = useState<string | null>(null)
 
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    // `isSubmitting` tracks only THIS form's async submit. Using the global
+    // auth `isLoading` here would leave the button stuck in "Signing in…" /
+    // disabled during the AuthProvider's initial session refresh on mount.
+    formState: { errors, isSubmitting },
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
   })
@@ -132,10 +135,10 @@ export default function LoginPage() {
             {/* Submit */}
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isSubmitting}
               className="inline-flex w-full items-center justify-center rounded-full bg-accent px-5 h-12 text-[15px] font-bold text-bg shadow-accent-glow transition-transform hover:scale-[1.01] focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg disabled:opacity-60 disabled:hover:scale-100"
             >
-              {isLoading ? 'Signing in...' : 'Sign in'}
+              {isSubmitting ? 'Signing in...' : 'Sign in'}
             </button>
           </form>
 
