@@ -14,6 +14,8 @@ import { Navigate, useNavigate } from 'react-router-dom'
 import { useState } from 'react'
 import { Leaf, LogOut } from 'lucide-react'
 import { useAuth } from '@/lib/stores/auth'
+import { NotificationBadge } from '@/components/notifications/NotificationBadge'
+import { useNotificationDrawer } from '@/lib/stores/notification-drawer'
 import { usePlants } from '@/lib/hooks/usePlants'
 import { useTents } from '@/lib/hooks/useTents'
 import { AvatarHeader } from '@/components/profile/AvatarHeader'
@@ -33,6 +35,7 @@ export default function ProfilePage() {
 
   const [tentModalOpen, setTentModalOpen] = useState(false)
   const [tentBeingEdited, setTentBeingEdited] = useState<Tent | null>(null)
+  const { open: openNotifications } = useNotificationDrawer()
 
   // Side-effect-free redirect: <Navigate> avoids the "cannot update during
   // render" warning that calling navigate() in render produces.
@@ -97,14 +100,17 @@ export default function ProfilePage() {
 
       <section className="px-5 pb-10">
         <H2 className="sr-only">Account</H2>
-        <button
-          type="button"
-          onClick={handleLogout}
-          className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-line bg-card px-4 py-3 text-sm font-semibold text-status-warn transition-colors hover:bg-status-warn/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-status-warn focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
-        >
-          <LogOut className="h-4 w-4" />
-          Sign out
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="inline-flex flex-1 items-center justify-center gap-2 rounded-md border border-line bg-card px-4 py-3 text-sm font-semibold text-status-warn transition-colors hover:bg-status-warn/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-status-warn focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+          >
+            <LogOut className="h-4 w-4" />
+            Sign out
+          </button>
+          <NotificationBadge onClick={openNotifications} />
+        </div>
       </section>
 
       <TentModal

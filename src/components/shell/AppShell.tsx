@@ -46,8 +46,8 @@ export interface AppShellProps {
   onFabClick?: () => void
   /**
    * Render the absolutely-positioned notification bell in the top-right
-   * corner. Defaults to true. Screens that render their own inline bell
-   * (Garden, PlantDetail) pass `false` to avoid a duplicate.
+   * corner. Defaults to false — every screen owns its inline bell.
+   * Only pass `true` for screens with no header of their own.
    */
   showAbsoluteBell?: boolean
 }
@@ -57,12 +57,12 @@ function AppShellInner({
   header,
   hideBottomNav = false,
   onFabClick,
-  showAbsoluteBell = true,
+  showAbsoluteBell = false,
 }: AppShellProps) {
   const { user, isAuthenticated } = useAuth()
   const { isOpen: notifOpen, open: openNotif, close: closeNotif } =
     useNotificationDrawer()
-  const { trigger: fabTrigger } = useFabAction()
+  const { trigger: fabTrigger, hasAction } = useFabAction()
 
   const showOnboarding =
     isAuthenticated && user !== null && user.hasOnboarded === false
@@ -94,7 +94,12 @@ function AppShellInner({
           {children}
         </div>
 
-        {!hideBottomNav && <BottomNav onFabClick={onFabClick ?? fabTrigger} />}
+        {!hideBottomNav && (
+          <BottomNav
+            onFabClick={onFabClick ?? fabTrigger}
+            hideFab={!hasAction && !onFabClick}
+          />
+        )}
       </div>
 
       {showOnboarding && <StageModeOnboarding />}

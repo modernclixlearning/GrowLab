@@ -45,8 +45,23 @@ vi.mock('@/components/plants/AddPlantModal', () => ({
   AddPlantModal: () => null,
 }))
 
+vi.mock('@/components/notifications/NotificationBadge', () => ({
+  NotificationBadge: () => null,
+}))
+
+vi.mock('@/lib/stores/notification-drawer', () => ({
+  NotificationDrawerProvider: ({ children }: { children: React.ReactNode }) => children,
+  useNotificationDrawer: () => ({ isOpen: false, open: vi.fn(), close: vi.fn() }),
+}))
+
+vi.mock('@/lib/stores/fab-action', () => ({
+  FabActionProvider: ({ children }: { children: React.ReactNode }) => children,
+  useFabAction: () => ({ trigger: vi.fn(), register: vi.fn(), hasAction: false }),
+}))
+
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
 
+import React from 'react'
 import DashboardPage from '@/routes/dashboard'
 
 

@@ -11,6 +11,8 @@ import { ChevronLeft, ChevronRight, CalendarDays } from 'lucide-react'
 import { DayPicker, TaskRow } from '@/components/schedule'
 import { useScheduledCareLogs, useCompleteCareLog } from '@/lib/hooks/useCareLogs'
 import { usePlants } from '@/lib/hooks/usePlants'
+import { NotificationBadge } from '@/components/notifications/NotificationBadge'
+import { useNotificationDrawer } from '@/lib/stores/notification-drawer'
 import type { CareLog } from '@/types/care-logs'
 
 /** Returns the Sunday that starts the week containing `date` (Sun-based weeks, not ISO). */
@@ -64,6 +66,7 @@ export default function SchedulePage() {
 
   const [weekStart, setWeekStart] = useState(() => startOfWeek(today))
   const [selectedDate, setSelectedDate] = useState<Date>(today)
+  const { open: openNotifications } = useNotificationDrawer()
 
   // Fetch the full week so DayPicker can show counts
   const weekEnd = addDays(weekStart, 6)
@@ -119,9 +122,12 @@ export default function SchedulePage() {
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 pb-24">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-fg-1">Schedule</h1>
-        <p className="mt-0.5 text-sm text-fg-2">{formatHeaderDate(selectedDate)}</p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-fg-1">Schedule</h1>
+          <p className="mt-0.5 text-sm text-fg-2">{formatHeaderDate(selectedDate)}</p>
+        </div>
+        <NotificationBadge onClick={openNotifications} />
       </div>
 
       {/* Week navigator */}

@@ -1,8 +1,9 @@
-import { createContext, useContext, useCallback, useRef, type ReactNode } from 'react'
+import { createContext, useContext, useCallback, useRef, useState, type ReactNode } from 'react'
 
 interface FabActionCtx {
-  trigger:  () => void
-  register: (fn: (() => void) | null) => void
+  trigger:   () => void
+  register:  (fn: (() => void) | null) => void
+  hasAction: boolean
 }
 
 // `null` sentinel so `useFabAction` can fail loudly when a consumer is
@@ -12,10 +13,14 @@ const FabActionContext = createContext<FabActionCtx | null>(null)
 
 export function FabActionProvider({ children }: { children: ReactNode }) {
   const handlerRef = useRef<(() => void) | null>(null)
+  const [hasAction, setHasAction] = useState(false)
   const trigger  = useCallback(() => { handlerRef.current?.() }, [])
-  const register = useCallback((fn: (() => void) | null) => { handlerRef.current = fn }, [])
+  const register = useCallback((fn: (() => void) | null) => {
+    handlerRef.current = fn
+    setHasAction(fn !== null)
+  }, [])
   return (
-    <FabActionContext.Provider value={{ trigger, register }}>
+    <FabActionContext.Provider value={{ trigger, register, hasAction }}>
       {children}
     </FabActionContext.Provider>
   )

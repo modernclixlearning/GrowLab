@@ -20,6 +20,9 @@ import {
   CalendarCheck,
 } from 'lucide-react'
 import { useAuth } from '@/lib/stores/auth'
+import { NotificationBadge } from '@/components/notifications/NotificationBadge'
+import { useNotificationDrawer } from '@/lib/stores/notification-drawer'
+import { useFabAction } from '@/lib/stores/fab-action'
 import { usePlants } from '@/lib/hooks/usePlants'
 import { useCareLogs, useScheduledCareLogs, useCompleteCareLog } from '@/lib/hooks/useCareLogs'
 import { useSensorDevices } from '@/lib/hooks/useSensors'
@@ -83,6 +86,14 @@ export default function DashboardPage() {
     limit: 100,
   })
   const [showAddModal, setShowAddModal] = useState(false)
+  const { open: openNotifications } = useNotificationDrawer()
+  const { register: registerFab } = useFabAction()
+
+  // Wire the BottomNav FAB to AddPlantModal while Dashboard is mounted.
+  useEffect(() => {
+    registerFab(() => setShowAddModal(true))
+    return () => registerFab(null)
+  }, [registerFab])
 
   // ── Data hooks ──────────────────────────────────────────────────────────
   // All hooks MUST run before the early returns below; calling hooks after a
@@ -170,13 +181,16 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <button
-            onClick={handleLogout}
-            className="rounded-md border border-line bg-card p-2 text-fg-2 transition-colors hover:bg-card-2 hover:text-fg focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
-            aria-label="Logout"
-          >
-            <LogOut className="h-5 w-5" />
-          </button>
+          <div className="flex items-center gap-1">
+            <NotificationBadge onClick={openNotifications} />
+            <button
+              onClick={handleLogout}
+              className="rounded-md border border-line bg-card p-2 text-fg-2 transition-colors hover:bg-card-2 hover:text-fg focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+              aria-label="Logout"
+            >
+              <LogOut className="h-5 w-5" />
+            </button>
+          </div>
         </div>
       </header>
 
