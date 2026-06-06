@@ -3,6 +3,7 @@
  */
 
 export { AddPlantModal } from './AddPlantModal'
+export { EditPlantModal } from './EditPlantModal'
 export { PlantCard } from './PlantCard'
 export { StagePills } from './StagePills'
 export type { StageFilter } from './StagePills'
