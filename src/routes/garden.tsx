@@ -13,7 +13,7 @@
  *   - Per-plant `careTag` is derived in the parent and passed to `<PlantCard>`.
  */
 
-import { Navigate, useNavigate } from 'react-router-dom'
+import { Navigate, useNavigate, useLocation } from 'react-router-dom'
 import { useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import { Leaf, Search, LogOut } from 'lucide-react'
 import { useAuth } from '@/lib/stores/auth'
@@ -103,10 +103,21 @@ function PlantCardWithCareTag({
 
 export default function GardenPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { user, isAuthenticated, isLoading: authLoading, logout } = useAuth()
   const stageMode: StageMode = user?.stageMode ?? 'expert'
   const [search, setSearch] = useState('')
-  const [stageFilter, setStageFilter] = useState<StageFilter>('all')
+  // Allow Dashboard stat tiles to navigate here with a pre-selected filter
+  // via react-router location.state so the URL stays clean.
+  // In Basic mode, Expert-only stages (e.g. 'flowering') are not valid pill
+  // ids — coerce through expertToBasic so the filter always matches an
+  // existing pill and filterPlants never receives an unknown stage.
+  const [stageFilter, setStageFilter] = useState<StageFilter>(() => {
+    const raw = (location.state as { stageFilter?: StageFilter } | null)?.stageFilter
+    if (!raw) return 'all'
+    const effectiveMode = user?.stageMode ?? 'expert'
+    return effectiveMode === 'basic' ? expertToBasic(raw as Parameters<typeof expertToBasic>[0]) : raw
+  })
   const [showAddModal, setShowAddModal] = useState(false)
   const { open: openNotifications } = useNotificationDrawer()
   const { register: registerFab } = useFabAction()
