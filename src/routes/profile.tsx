@@ -74,11 +74,12 @@ export default function ProfilePage() {
 
   return (
     <div className="mx-auto min-h-full w-full max-w-2xl">
-      {/* Profile header — title + bell consistent with other screens */}
-      <header className="flex items-center justify-between px-5 pt-5 pb-2">
-        <H2 className="text-[22px]">Profile</H2>
+      {/* Notification bell — top-right, consistent with all other screens.
+          No heading needed here: AvatarHeader already renders the page
+          identity (Eyebrow "Profile" + H1 user.name). */}
+      <div className="flex justify-end px-4 pt-4">
         <NotificationBadge onClick={openNotifications} />
-      </header>
+      </div>
 
       <AvatarHeader user={user} plants={plants} />
 
