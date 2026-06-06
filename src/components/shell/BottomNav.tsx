@@ -73,7 +73,11 @@ export function BottomNav({
   return (
     <nav
       aria-label="Primary"
-      className="absolute inset-x-0 bottom-0 z-10 mx-auto flex h-[92px] w-full max-w-[412px] items-stretch gap-1 px-2 pb-3 pt-2 bg-gradient-to-b from-transparent via-bg/60 to-bg md:max-w-[560px]"
+      // Mobile: absolute within the h-dvh shell.
+      // Desktop (md+): fixed to the viewport bottom so it stays anchored
+      // while the page scrolls natively. Centering mirrors the content
+      // container (max-w-3xl/4xl mx-auto) so it appears as a dock.
+      className="absolute inset-x-0 bottom-0 z-10 mx-auto flex h-[92px] w-full max-w-[412px] items-stretch gap-1 px-2 pb-3 pt-2 bg-gradient-to-b from-transparent via-bg/60 to-bg md:fixed md:max-w-[560px]"
     >
       {left.map((item) => (
         <NavButton
