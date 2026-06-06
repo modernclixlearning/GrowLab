@@ -13,7 +13,7 @@
  *   - Per-plant `careTag` is derived in the parent and passed to `<PlantCard>`.
  */
 
-import { Navigate, useNavigate } from 'react-router-dom'
+import { Navigate, useNavigate, useLocation } from 'react-router-dom'
 import { useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import { Leaf, Search, LogOut } from 'lucide-react'
 import { useAuth } from '@/lib/stores/auth'
@@ -103,10 +103,15 @@ function PlantCardWithCareTag({
 
 export default function GardenPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { user, isAuthenticated, isLoading: authLoading, logout } = useAuth()
   const stageMode: StageMode = user?.stageMode ?? 'expert'
   const [search, setSearch] = useState('')
-  const [stageFilter, setStageFilter] = useState<StageFilter>('all')
+  // Allow Dashboard stat tiles to navigate here with a pre-selected filter
+  // via react-router location.state so the URL stays clean.
+  const [stageFilter, setStageFilter] = useState<StageFilter>(
+    (location.state as { stageFilter?: StageFilter } | null)?.stageFilter ?? 'all'
+  )
   const [showAddModal, setShowAddModal] = useState(false)
   const { open: openNotifications } = useNotificationDrawer()
   const { register: registerFab } = useFabAction()
