@@ -45,11 +45,12 @@ import { GrowthBars } from '@/components/plants/GrowthBars'
 import { Eyebrow, H1, H2, H3 } from '@/components/shell'
 import { deriveCareTag, CARE_TAG_TONE_CLASS } from '@/lib/careTag'
 import { getApiErrorToastMessage } from '@/lib/api/errors'
-import type { GrowthStage, HealthStatus, StrainType } from '@/types/plants'
+import type { GrowthStage, HealthStatus, StrainType, FloweringType } from '@/types/plants'
 import {
   GROWTH_STAGE_CONFIG,
   HEALTH_STATUS_CONFIG,
   STRAIN_TYPE_CONFIG,
+  FLOWERING_TYPE_CONFIG,
 } from '@/types/plants'
 
 /** Days since a date string. */
@@ -156,6 +157,7 @@ export default function PlantDetailPage() {
   const stageConfig = GROWTH_STAGE_CONFIG[stage]
   const healthConfig = HEALTH_STATUS_CONFIG[plant.healthStatus as HealthStatus]
   const strainConfig = STRAIN_TYPE_CONFIG[plant.strainType as StrainType]
+  const floweringConfig = FLOWERING_TYPE_CONFIG[plant.floweringType as FloweringType]
   const daysInStage = daysSince(plant.stageStartDate)
   const totalAge = daysSince(plant.createdAt)
   // F2: weekOfStage now comes from the server, derived against the
@@ -265,6 +267,7 @@ export default function PlantDetailPage() {
             />
             <Eyebrow className={stageAccent.text}>
               {(strainConfig?.label ?? plant.strainType).toUpperCase()}
+              {floweringConfig?.shortLabel === 'Auto' && ' · AUTO'}
             </Eyebrow>
           </div>
           <H1 className="text-[34px] leading-tight">{plant.name}</H1>
@@ -366,9 +369,8 @@ export default function PlantDetailPage() {
           <Eyebrow tone="muted" className="mb-3 block">Details</Eyebrow>
           <dl className="space-y-3">
             <DetailRow term="Strain" value={displayStrain} />
-            {plant.strainTemplateId && (
-              <DetailRow term="Strain Type" value={strainConfig?.label ?? plant.strainType} />
-            )}
+            <DetailRow term="Genetics" value={strainConfig?.label ?? plant.strainType} />
+            <DetailRow term="Flowering" value={floweringConfig?.label ?? plant.floweringType} />
             <DetailRow term="Stage Start" value={formatDate(plant.stageStartDate)} />
             <DetailRow term="Days in Stage" value={`${daysInStage}d`} />
             <DetailRow term="Last Updated" value={formatDate(plant.updatedAt)} />

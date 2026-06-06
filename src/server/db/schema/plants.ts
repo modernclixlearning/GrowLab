@@ -36,10 +36,17 @@ export const HEALTH_STATUSES = ['healthy', 'stressed', 'sick', 'recovering', 'de
 export type HealthStatus = typeof HEALTH_STATUSES[number]
 
 /**
- * Strain type enum values
+ * Strain type enum values — genetic dominance (what the plant IS)
  */
-export const STRAIN_TYPES = ['indica', 'sativa', 'hybrid', 'auto'] as const
+export const STRAIN_TYPES = ['indica', 'sativa', 'hybrid'] as const
 export type StrainType = typeof STRAIN_TYPES[number]
+
+/**
+ * Flowering type enum values — mechanism (HOW it decides to flower)
+ * Orthogonal to strainType: an auto can be indica, sativa, or hybrid.
+ */
+export const FLOWERING_TYPES = ['photoperiod', 'auto'] as const
+export type FloweringType = typeof FLOWERING_TYPES[number]
 
 /**
  * Plant entity - Individual cannabis plant record
@@ -54,8 +61,11 @@ export const plants = pgTable('plants', {
   /** Plant display name (e.g., "OG Kush #1") */
   name: text('name').notNull(),
 
-  /** Strain type: indica, sativa, hybrid, auto */
+  /** Genetic dominance: indica, sativa, hybrid */
   strainType: text('strain_type').notNull(),
+
+  /** Flowering mechanism: photoperiod (light-dependent) or auto (age-dependent) */
+  floweringType: text('flowering_type').notNull().default('photoperiod'),
 
   /** Current growth stage */
   growthStage: text('growth_stage').notNull().default('seedling'),

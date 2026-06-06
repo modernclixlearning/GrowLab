@@ -18,9 +18,11 @@ import {
   GROWTH_STAGE_CONFIG,
   HEALTH_STATUS_CONFIG,
   STRAIN_TYPE_CONFIG,
+  FLOWERING_TYPE_CONFIG,
   type GrowthStage,
   type HealthStatus,
   type StrainType,
+  type FloweringType,
 } from '@/types/plants'
 import { Eyebrow } from '@/components/shell'
 import { CARE_TAG_TONE_CLASS, type CareTag } from '@/lib/careTag'
@@ -72,6 +74,7 @@ export function PlantCard({ plant, onClick, careTag, compact = false }: PlantCar
   const stageConfig = GROWTH_STAGE_CONFIG[stage]
   const healthConfig = HEALTH_STATUS_CONFIG[plant.healthStatus as HealthStatus]
   const strainConfig = STRAIN_TYPE_CONFIG[plant.strainType as StrainType]
+  const floweringConfig = FLOWERING_TYPE_CONFIG[plant.floweringType as FloweringType]
   const daysInStage = daysSince(plant.stageStartDate)
   const totalAge = daysSince(plant.createdAt)
   const stageBorder = STAGE_BORDER[stage] ?? 'border-l-fg-4'
@@ -112,7 +115,9 @@ export function PlantCard({ plant, onClick, careTag, compact = false }: PlantCar
           {/* Eyebrow row: strain · stage · week */}
           <div className="flex items-center justify-between gap-2">
             <Eyebrow tone="muted" className="truncate">
-              {strainConfig?.label ?? plant.strainType} &middot; {stageLabel} &middot; WEEK {weekOfStage}
+              {strainConfig?.label ?? plant.strainType}
+              {floweringConfig?.shortLabel === 'Auto' && ' · AUTO'}
+              {' '}&middot; {stageLabel} &middot; WEEK {weekOfStage}
             </Eyebrow>
             {healthConfig && (
               <span

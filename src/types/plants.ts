@@ -15,9 +15,15 @@ export type GrowthStage = 'seedling' | 'vegetative' | 'flowering' | 'harvesting'
 export type HealthStatus = 'healthy' | 'stressed' | 'sick' | 'recovering' | 'dead'
 
 /**
- * Strain type values
+ * Strain type values — genetic dominance
  */
-export type StrainType = 'indica' | 'sativa' | 'hybrid' | 'auto'
+export type StrainType = 'indica' | 'sativa' | 'hybrid'
+
+/**
+ * Flowering type values — mechanism (orthogonal to strainType)
+ * A plant can be auto-indica, auto-hybrid, photo-sativa, etc.
+ */
+export type FloweringType = 'photoperiod' | 'auto'
 
 /**
  * Per-stage duration overrides (days). All keys optional.
@@ -39,6 +45,7 @@ export interface Plant {
   userId: string
   name: string
   strainType: StrainType
+  floweringType: FloweringType
   growthStage: GrowthStage
   stageStartDate: string
   healthStatus: HealthStatus
@@ -65,6 +72,7 @@ export interface Plant {
 export interface CreatePlantRequest {
   name: string
   strainType: StrainType
+  floweringType?: FloweringType
   growthStage?: GrowthStage
   stageStartDate?: string
   photoUrl?: string
@@ -81,6 +89,7 @@ export interface CreatePlantRequest {
 export interface UpdatePlantRequest {
   name?: string
   strainType?: StrainType
+  floweringType?: FloweringType
   growthStage?: GrowthStage
   healthStatus?: HealthStatus
   photoUrl?: string | null
@@ -188,11 +197,18 @@ export const HEALTH_STATUS_CONFIG: Record<HealthStatus, {
 }
 
 /**
- * Strain type display configuration
+ * Strain type display configuration (genetic dominance)
  */
 export const STRAIN_TYPE_CONFIG: Record<StrainType, { label: string }> = {
   indica: { label: 'Indica' },
   sativa: { label: 'Sativa' },
   hybrid: { label: 'Hybrid' },
-  auto: { label: 'Auto-flowering' },
+}
+
+/**
+ * Flowering type display configuration (mechanism)
+ */
+export const FLOWERING_TYPE_CONFIG: Record<FloweringType, { label: string; shortLabel: string }> = {
+  photoperiod: { label: 'Photoperiod', shortLabel: 'Photo' },
+  auto: { label: 'Auto-flowering', shortLabel: 'Auto' },
 }

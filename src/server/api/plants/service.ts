@@ -309,6 +309,7 @@ export async function createPlant(
       userId,
       name: input.name,
       strainType: input.strainType,
+      floweringType: input.floweringType ?? 'photoperiod',
       growthStage: input.growthStage ?? 'seedling',
       stageStartDate,
       healthStatus: 'healthy',
@@ -383,6 +384,7 @@ export async function updatePlant(
 
   if (input.name !== undefined) updateValues.name = input.name
   if (input.strainType !== undefined) updateValues.strainType = input.strainType
+  if (input.floweringType !== undefined) updateValues.floweringType = input.floweringType
   if (input.healthStatus !== undefined) updateValues.healthStatus = input.healthStatus
   if (input.photoUrl !== undefined) updateValues.photoUrl = input.photoUrl
   if (input.notes !== undefined) updateValues.notes = input.notes

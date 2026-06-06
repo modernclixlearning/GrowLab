@@ -111,13 +111,32 @@ describe('Plant Validation Schemas', () => {
     })
 
     it('should accept all valid strain types', () => {
-      for (const strainType of ['indica', 'sativa', 'hybrid', 'auto']) {
+      for (const strainType of ['indica', 'sativa', 'hybrid']) {
         const result = createPlantSchema.safeParse({
           name: 'Test',
           strainType,
         })
         expect(result.success).toBe(true)
       }
+    })
+
+    it('should accept all valid flowering types', () => {
+      for (const floweringType of ['photoperiod', 'auto']) {
+        const result = createPlantSchema.safeParse({
+          name: 'Test',
+          strainType: 'indica',
+          floweringType,
+        })
+        expect(result.success).toBe(true)
+      }
+    })
+
+    it('should reject auto as a strain type (now a flowering type)', () => {
+      const result = createPlantSchema.safeParse({
+        name: 'Test',
+        strainType: 'auto',
+      })
+      expect(result.success).toBe(false)
     })
 
     it('should accept all valid growth stages', () => {
@@ -277,14 +296,13 @@ describe('Growth Stage Transitions', () => {
     ])
   })
 
-  it('should define valid strain types', async () => {
+  it('should define valid strain types (genetic dominance only)', async () => {
     const { STRAIN_TYPES } = await import('@/server/db/schema/plants')
-    
-    expect(STRAIN_TYPES).toEqual([
-      'indica',
-      'sativa',
-      'hybrid',
-      'auto',
-    ])
+    expect(STRAIN_TYPES).toEqual(['indica', 'sativa', 'hybrid'])
+  })
+
+  it('should define valid flowering types (mechanism)', async () => {
+    const { FLOWERING_TYPES } = await import('@/server/db/schema/plants')
+    expect(FLOWERING_TYPES).toEqual(['photoperiod', 'auto'])
   })
 })

@@ -11,9 +11,10 @@ import { toast } from 'sonner'
 import { X, AlertCircle } from 'lucide-react'
 import { useUpdatePlant } from '@/lib/hooks/usePlants'
 import { getApiErrorToastMessage } from '@/lib/api/errors'
-import type { Plant, StrainType, HealthStatus } from '@/types/plants'
+import type { Plant, StrainType, FloweringType, HealthStatus } from '@/types/plants'
 import {
   STRAIN_TYPE_CONFIG,
+  FLOWERING_TYPE_CONFIG,
   HEALTH_STATUS_CONFIG,
 } from '@/types/plants'
 
@@ -36,6 +37,7 @@ interface EditPlantModalProps {
 interface FormState {
   name: string
   strainType: StrainType
+  floweringType: FloweringType
   healthStatus: HealthStatus
   notes: string
 }
@@ -45,6 +47,7 @@ export function EditPlantModal({ plant, isOpen, onClose, onSuccess }: EditPlantM
   const [form, setForm] = useState<FormState>({
     name: plant.name,
     strainType: plant.strainType,
+    floweringType: plant.floweringType,
     healthStatus: plant.healthStatus,
     notes: plant.notes ?? '',
   })
@@ -58,11 +61,12 @@ export function EditPlantModal({ plant, isOpen, onClose, onSuccess }: EditPlantM
     setForm({
       name: plant.name,
       strainType: plant.strainType,
+      floweringType: plant.floweringType,
       healthStatus: plant.healthStatus,
       notes: plant.notes ?? '',
     })
     setFormError(null)
-  }, [plant.id, plant.name, plant.strainType, plant.healthStatus, plant.notes, isOpen])
+  }, [plant.id, plant.name, plant.strainType, plant.floweringType, plant.healthStatus, plant.notes, isOpen])
 
   if (!isOpen) return null
 
@@ -78,6 +82,7 @@ export function EditPlantModal({ plant, isOpen, onClose, onSuccess }: EditPlantM
     setForm({
       name: plant.name,
       strainType: plant.strainType,
+      floweringType: plant.floweringType,
       healthStatus: plant.healthStatus,
       notes: plant.notes ?? '',
     })
@@ -103,6 +108,7 @@ export function EditPlantModal({ plant, isOpen, onClose, onSuccess }: EditPlantM
         data: {
           name: form.name.trim(),
           strainType: form.strainType,
+          floweringType: form.floweringType,
           healthStatus: form.healthStatus,
           notes: form.notes.trim() || null,
         },
@@ -178,12 +184,12 @@ export function EditPlantModal({ plant, isOpen, onClose, onSuccess }: EditPlantM
             />
           </div>
 
-          {/* Strain Type */}
+          {/* Strain Type — genetic dominance */}
           <div>
             <label className="mb-2 block font-mono text-[11px] font-semibold uppercase tracking-eyebrow text-fg-2">
-              Strain Type
+              Genetics
             </label>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-3 gap-2">
               {(Object.entries(STRAIN_TYPE_CONFIG) as [StrainType, { label: string }][]).map(
                 ([value, config]) => {
                   const active = form.strainType === value
@@ -192,6 +198,36 @@ export function EditPlantModal({ plant, isOpen, onClose, onSuccess }: EditPlantM
                       key={value}
                       type="button"
                       onClick={() => update('strainType', value)}
+                      aria-pressed={active}
+                      className={[
+                        'rounded-md border-2 px-4 py-3 text-left text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg',
+                        active
+                          ? 'border-accent bg-accent-soft text-accent'
+                          : 'border-line bg-card-2 text-fg hover:bg-card',
+                      ].join(' ')}
+                    >
+                      {config.label}
+                    </button>
+                  )
+                },
+              )}
+            </div>
+          </div>
+
+          {/* Flowering Type — mechanism (orthogonal to genetics) */}
+          <div>
+            <label className="mb-2 block font-mono text-[11px] font-semibold uppercase tracking-eyebrow text-fg-2">
+              Flowering
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              {(Object.entries(FLOWERING_TYPE_CONFIG) as [FloweringType, { label: string }][]).map(
+                ([value, config]) => {
+                  const active = form.floweringType === value
+                  return (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => update('floweringType', value)}
                       aria-pressed={active}
                       className={[
                         'rounded-md border-2 px-4 py-3 text-left text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg',
