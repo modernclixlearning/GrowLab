@@ -84,8 +84,11 @@ function AppShellInner({
         <div
           className={[
             // Mobile: flex-1 + overflow-y-auto confines scroll to this div.
-            // Desktop (md+): let content flow naturally; page scroll handles it.
-            'relative w-full flex-1 overflow-y-auto overflow-x-hidden md:flex-none md:overflow-y-visible',
+            // Desktop (md+): md:overflow-visible clears BOTH axes. Setting only
+            // overflow-y:visible while overflow-x:hidden triggers the CSS spec
+            // rule that computes overflow-y to `auto`, creating an inner scroll
+            // container (scrollbar in the middle of the screen).
+            'relative w-full flex-1 overflow-y-auto overflow-x-hidden md:flex-none md:overflow-visible',
             hideBottomNav ? '' : 'pb-[92px]',
           ]
             .filter(Boolean)

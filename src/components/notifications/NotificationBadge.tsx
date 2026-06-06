@@ -14,7 +14,7 @@ export function NotificationBadge({ onClick }: NotificationBadgeProps) {
       type="button"
       onClick={onClick}
       aria-label={unread > 0 ? `${unread} unread notifications` : 'Notifications'}
-      className="relative flex items-center justify-center rounded-full p-2 text-fg-3 transition-colors hover:text-fg focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+      className="relative flex items-center justify-center rounded-full p-3 text-fg-3 transition-colors hover:text-fg focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
     >
       <Bell className="h-5 w-5" strokeWidth={2} />
       {unread > 0 && (
