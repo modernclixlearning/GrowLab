@@ -2,7 +2,7 @@
  * GrowLab — EditPlantModal tests
  */
 
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { userEvent } from '@testing-library/user-event'
 import type { Plant } from '@/types/plants'
@@ -16,6 +16,10 @@ vi.mock('@/lib/hooks/usePlants', () => ({
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
 
 import { EditPlantModal } from '@/components/plants/EditPlantModal'
+
+beforeEach(() => {
+  mockMutateAsync.mockClear()
+})
 
 const mockPlant: Plant = {
   id: 'plant1',

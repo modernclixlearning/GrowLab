@@ -17,6 +17,15 @@ import {
   HEALTH_STATUS_CONFIG,
 } from '@/types/plants'
 
+/** Static active-state color class for each health status (Tailwind-safe). */
+const HEALTH_ACTIVE_CLASS: Record<HealthStatus, string> = {
+  healthy: 'text-status-good',
+  stressed: 'text-status-thirsty',
+  sick: 'text-status-warn',
+  recovering: 'text-status-water',
+  dead: 'text-fg-3',
+}
+
 interface EditPlantModalProps {
   plant: Plant
   isOpen: boolean
@@ -194,7 +203,7 @@ export function EditPlantModal({ plant, isOpen, onClose, onSuccess }: EditPlantM
               Health Status
             </label>
             <div className="grid grid-cols-2 gap-2">
-              {(Object.entries(HEALTH_STATUS_CONFIG) as [HealthStatus, { label: string; color: string }][]).map(
+              {(Object.entries(HEALTH_STATUS_CONFIG) as [HealthStatus, { label: string }][]).map(
                 ([value, config]) => {
                   const active = form.healthStatus === value
                   return (
@@ -206,7 +215,7 @@ export function EditPlantModal({ plant, isOpen, onClose, onSuccess }: EditPlantM
                       className={[
                         'rounded-md border-2 px-4 py-3 text-left text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg',
                         active
-                          ? `border-accent bg-accent-soft ${config.color}`
+                          ? `border-accent bg-accent-soft ${HEALTH_ACTIVE_CLASS[value]}`
                           : 'border-line bg-card-2 text-fg hover:bg-card',
                       ].join(' ')}
                     >
