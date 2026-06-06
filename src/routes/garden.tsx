@@ -14,7 +14,7 @@
  */
 
 import { Navigate, useNavigate, useLocation } from 'react-router-dom'
-import { useEffect, useLayoutEffect, useMemo, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Leaf, Search, LogOut } from 'lucide-react'
 import { useAuth } from '@/lib/stores/auth'
 import { NotificationBadge } from '@/components/notifications/NotificationBadge'
@@ -33,7 +33,7 @@ import {
   BASIC_STAGE_LABEL,
   type BasicStage,
 } from '@/lib/stage-mapping'
-import type { Plant } from '@/types/plants'
+import type { Plant, GrowthStage } from '@/types/plants'
 import { STRAIN_TYPE_CONFIG, GROWTH_STAGE_CONFIG } from '@/types/plants'
 import type { StageMode } from '@/types/auth'
 
@@ -109,14 +109,21 @@ export default function GardenPage() {
   const [search, setSearch] = useState('')
   // Allow Dashboard stat tiles to navigate here with a pre-selected filter
   // via react-router location.state so the URL stays clean.
-  // In Basic mode, Expert-only stages (e.g. 'flowering') are not valid pill
-  // ids — coerce through expertToBasic so the filter always matches an
-  // existing pill and filterPlants never receives an unknown stage.
+  // Only Expert-only GrowthStage values ('vegetative', 'flowering', etc.)
+  // need coercion in Basic mode. 'all', Basic buckets ('veg', 'flower',
+  // 'harvest') and 'seedling' are already valid and must pass through
+  // unchanged — passing them into expertToBasic() would return undefined.
+  const EXPERT_ONLY_STAGES = new Set([
+    'vegetative', 'flowering', 'harvesting', 'drying', 'curing', 'completed',
+  ])
   const [stageFilter, setStageFilter] = useState<StageFilter>(() => {
     const raw = (location.state as { stageFilter?: StageFilter } | null)?.stageFilter
     if (!raw) return 'all'
     const effectiveMode = user?.stageMode ?? 'expert'
-    return effectiveMode === 'basic' ? expertToBasic(raw as Parameters<typeof expertToBasic>[0]) : raw
+    if (effectiveMode === 'basic' && EXPERT_ONLY_STAGES.has(raw)) {
+      return expertToBasic(raw as GrowthStage)
+    }
+    return raw
   })
   const [showAddModal, setShowAddModal] = useState(false)
   const { open: openNotifications } = useNotificationDrawer()
@@ -130,11 +137,14 @@ export default function GardenPage() {
     return () => registerFab(null)
   }, [registerFab])
 
-  // When the user flips Basic↔Expert in Profile, the previously-selected
-  // filter may no longer be a valid pill (e.g., 'flowering' isn't a
-  // Basic bucket). Reset to 'all' on stageMode change so the UI never
-  // ends up with an orphan filter that hides every plant.
+  // When the user flips Basic↔Expert in Profile the previously-selected filter
+  // may no longer be a valid pill. Reset to 'all' on stageMode change.
+  // Skip the initial mount: during auth loading stageMode starts as 'expert'
+  // (user=null), then flips to the real value — firing here would wipe the
+  // pre-filter navigated from Dashboard before the user sees it.
+  const isMountRef = useRef(true)
   useEffect(() => {
+    if (isMountRef.current) { isMountRef.current = false; return }
     setStageFilter('all')
   }, [stageMode])
 
