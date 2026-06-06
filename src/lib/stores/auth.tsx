@@ -11,6 +11,7 @@ import {
   useState,
   useCallback,
   useEffect,
+  useRef,
   type ReactNode,
 } from 'react'
 import type { User, RegisterRequest, LoginRequest } from '@/types/auth'
@@ -48,6 +49,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isAuthenticated: false,
   })
 
+  // Monotonic counter bumped by every explicit auth mutation (login /
+  // register / logout). The mount-time `refreshSession()` captures the value
+  // at start and only applies its result if no newer mutation has landed —
+  // otherwise a slow refresh resolving after a successful login could clobber
+  // the authenticated state and log the user back out.
+  const mutationSeq = useRef(0)
+
   /**
    * Refresh the session on mount
    */
@@ -59,6 +67,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
    * Refresh session using refresh token cookie
    */
   const refreshSession = useCallback(async (): Promise<boolean> => {
+    // Snapshot the mutation counter; if it changes while we await the network,
+    // a newer login/register/logout has taken over and our result is stale.
+    const seq = mutationSeq.current
+    const isStale = () => mutationSeq.current !== seq
+
     try {
       const result = await authApi.refreshToken()
 
@@ -66,6 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const meResult = await authApi.getMe(result.data.accessToken)
 
         if (meResult.success) {
+          if (isStale()) return true
           setState({
             user: meResult.data.user,
             accessToken: result.data.accessToken,
@@ -76,6 +90,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
 
+      if (isStale()) return false
       setState({
         user: null,
         accessToken: null,
@@ -84,6 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       })
       return false
     } catch {
+      if (isStale()) return false
       setState({
         user: null,
         accessToken: null,
@@ -99,6 +115,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
    */
   const login = useCallback(
     async (data: LoginRequest): Promise<{ success: boolean; error?: string }> => {
+      // Supersede any in-flight refreshSession so its result can't clobber
+      // the state this login is about to set.
+      mutationSeq.current += 1
       setState((prev) => ({ ...prev, isLoading: true }))
 
       try {
@@ -129,6 +148,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
    */
   const register = useCallback(
     async (data: RegisterRequest): Promise<{ success: boolean; error?: string }> => {
+      // Supersede any in-flight refreshSession (see login).
+      mutationSeq.current += 1
       setState((prev) => ({ ...prev, isLoading: true }))
 
       try {
@@ -165,6 +186,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
    * Logout and clear session
    */
   const logout = useCallback(async (): Promise<void> => {
+    // Supersede any in-flight refreshSession so it can't re-authenticate.
+    mutationSeq.current += 1
     await authApi.logout()
     setState({
       user: null,
