@@ -109,9 +109,15 @@ export default function GardenPage() {
   const [search, setSearch] = useState('')
   // Allow Dashboard stat tiles to navigate here with a pre-selected filter
   // via react-router location.state so the URL stays clean.
-  const [stageFilter, setStageFilter] = useState<StageFilter>(
-    (location.state as { stageFilter?: StageFilter } | null)?.stageFilter ?? 'all'
-  )
+  // In Basic mode, Expert-only stages (e.g. 'flowering') are not valid pill
+  // ids — coerce through expertToBasic so the filter always matches an
+  // existing pill and filterPlants never receives an unknown stage.
+  const [stageFilter, setStageFilter] = useState<StageFilter>(() => {
+    const raw = (location.state as { stageFilter?: StageFilter } | null)?.stageFilter
+    if (!raw) return 'all'
+    const effectiveMode = user?.stageMode ?? 'expert'
+    return effectiveMode === 'basic' ? expertToBasic(raw as Parameters<typeof expertToBasic>[0]) : raw
+  })
   const [showAddModal, setShowAddModal] = useState(false)
   const { open: openNotifications } = useNotificationDrawer()
   const { register: registerFab } = useFabAction()
