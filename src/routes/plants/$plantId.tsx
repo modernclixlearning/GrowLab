@@ -1,12 +1,14 @@
 /**
  * GrowLab Plant Detail Page
  *
- * F1 redesign (Master Plan §3 F1):
- *   - Full-width hero image from `photoUrl` (`heroPhotoUrl` lands in F2).
+ * F1 redesign (Master Plan §3 F1), extended through F4/F5:
+ *   - Full-width hero image from `heroPhotoUrl` (latest/selected photo),
+ *     falling back to the legacy `photoUrl` for pre-F4 plants.
  *   - Stage-tinted eyebrow + pulse dot, mono "ID · PLANTED date" line.
  *   - Stat tiles (age, in-stage week, careTag).
  *   - Quick action grid + redesigned <CareLogList>.
- *   - NO humidity/light/temp/photo timeline (F4/F5 territory).
+ *   - F4: <UploadZone> + <PhotoTimeline> (photos selectable as cover).
+ *   - F5: humidity/temp/growth widgets (Expert mode only).
  *
  * Toasts: Sonner is fired by `<CareLogList>` after each mutation; the
  * stage-advance + delete mutations now also surface success/error
@@ -171,6 +173,16 @@ export default function PlantDetailPage() {
   const stageAccent = STAGE_ACCENT[stage] ?? STAGE_ACCENT.completed
   const careTag = careLogsData ? deriveCareTag(careLogsData.careLogs) : null
   const idShort = plant.id.slice(0, 4).toUpperCase()
+  // Hero image: prefer the F4-managed heroPhotoUrl (latest/selected photo),
+  // falling back to the legacy single photoUrl for plants created pre-F4.
+  const heroUrl = plant.heroPhotoUrl ?? plant.photoUrl
+  // `updatePlant` is shared across actions on this page (advance stage,
+  // set cover). Derive per-action pending flags from the in-flight
+  // mutation variables so one action's spinner doesn't disable another's UI.
+  const isAdvancingStage =
+    updatePlant.isPending && updatePlant.variables?.data?.growthStage !== undefined
+  const isSettingHero =
+    updatePlant.isPending && updatePlant.variables?.data?.heroPhotoUrl !== undefined
 
   // F2: prefer named strain (template > free-form > strainType label).
   const strainTemplate = plant.strainTemplateId
@@ -197,6 +209,18 @@ export default function PlantDetailPage() {
     }
   }
 
+  const handleSetHero = async (url: string) => {
+    try {
+      await updatePlant.mutateAsync({
+        plantId: plant.id,
+        data: { heroPhotoUrl: url },
+      })
+      toast.success('Cover photo updated')
+    } catch (err) {
+      toast.error(getApiErrorToastMessage(err, 'Failed to set cover photo'))
+    }
+  }
+
   const handleDelete = async () => {
     try {
       await deletePlant.mutateAsync(plant.id)
@@ -213,9 +237,9 @@ export default function PlantDetailPage() {
       <header
         className="relative isolate h-[320px] overflow-hidden bg-bg-2"
         style={
-          plant.photoUrl
+          heroUrl
             ? {
-                backgroundImage: `url(${plant.photoUrl})`,
+                backgroundImage: `url(${heroUrl})`,
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
               }
@@ -277,7 +301,7 @@ export default function PlantDetailPage() {
         </div>
 
         {/* Placeholder when no photo */}
-        {!plant.photoUrl && (
+        {!heroUrl && (
           <div className="absolute inset-0 flex items-center justify-center">
             <Leaf className="h-20 w-20 text-fg-4" aria-hidden="true" />
           </div>
@@ -346,12 +370,12 @@ export default function PlantDetailPage() {
             <Eyebrow tone="accent" className="mb-2 block">Growth Stage</Eyebrow>
             <button
               onClick={handleAdvanceStage}
-              disabled={updatePlant.isPending}
+              disabled={isAdvancingStage}
               className="flex w-full items-center justify-between rounded-md border border-accent/40 bg-accent-soft px-4 py-3 text-left transition-colors hover:bg-accent-soft/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg disabled:opacity-60"
             >
               <div>
                 <p className="font-semibold text-accent">
-                  {updatePlant.isPending
+                  {isAdvancingStage
                     ? 'Advancing...'
                     : `Advance to ${GROWTH_STAGE_CONFIG[nextStage].label}`}
                 </p>
@@ -391,8 +415,13 @@ export default function PlantDetailPage() {
           <UploadZone mode="immediate" plantId={plant.id} stage={stage} />
         </section>
 
-        {/* Photo Timeline (F4) */}
-        <PhotoTimeline plantId={plant.id} />
+        {/* Photo Timeline (F4) — photos selectable as cover via lightbox */}
+        <PhotoTimeline
+          plantId={plant.id}
+          currentHeroUrl={heroUrl}
+          onSetHero={handleSetHero}
+          isSettingHero={isSettingHero}
+        />
 
         {/* F5 — Environmental data (Expert only) */}
         {stageMode === 'expert' && (

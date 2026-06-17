@@ -99,9 +99,9 @@ export function PlantCard({ plant, onClick, careTag, compact = false }: PlantCar
             photoSize,
           ].join(' ')}
         >
-          {plant.photoUrl ? (
+          {(plant.heroPhotoUrl ?? plant.photoUrl) ? (
             <img
-              src={plant.photoUrl}
+              src={plant.heroPhotoUrl ?? plant.photoUrl!}
               alt={plant.name}
               className="h-full w-full object-cover"
             />
