@@ -2,7 +2,7 @@
  * Aplica la política CORS al bucket R2 de GrowLab.
  * Permite PUT directo desde el browser (presigned URLs) tanto en dev como en prod.
  *
- * Uso: cd code && npx tsx scripts/set-r2-cors.ts
+ * Uso (desde la raíz del repo): npx tsx scripts/set-r2-cors.ts
  */
 import { config } from 'dotenv'
 import { S3Client, PutBucketCorsCommand } from '@aws-sdk/client-s3'

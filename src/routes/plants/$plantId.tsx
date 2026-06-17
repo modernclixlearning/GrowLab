@@ -1,12 +1,14 @@
 /**
  * GrowLab Plant Detail Page
  *
- * F1 redesign (Master Plan §3 F1):
- *   - Full-width hero image from `photoUrl` (`heroPhotoUrl` lands in F2).
+ * F1 redesign (Master Plan §3 F1), extended through F4/F5:
+ *   - Full-width hero image from `heroPhotoUrl` (latest/selected photo),
+ *     falling back to the legacy `photoUrl` for pre-F4 plants.
  *   - Stage-tinted eyebrow + pulse dot, mono "ID · PLANTED date" line.
  *   - Stat tiles (age, in-stage week, careTag).
  *   - Quick action grid + redesigned <CareLogList>.
- *   - NO humidity/light/temp/photo timeline (F4/F5 territory).
+ *   - F4: <UploadZone> + <PhotoTimeline> (photos selectable as cover).
+ *   - F5: humidity/temp/growth widgets (Expert mode only).
  *
  * Toasts: Sonner is fired by `<CareLogList>` after each mutation; the
  * stage-advance + delete mutations now also surface success/error
@@ -174,6 +176,13 @@ export default function PlantDetailPage() {
   // Hero image: prefer the F4-managed heroPhotoUrl (latest/selected photo),
   // falling back to the legacy single photoUrl for plants created pre-F4.
   const heroUrl = plant.heroPhotoUrl ?? plant.photoUrl
+  // `updatePlant` is shared across actions on this page (advance stage,
+  // set cover). Derive per-action pending flags from the in-flight
+  // mutation variables so one action's spinner doesn't disable another's UI.
+  const isAdvancingStage =
+    updatePlant.isPending && updatePlant.variables?.data?.growthStage !== undefined
+  const isSettingHero =
+    updatePlant.isPending && updatePlant.variables?.data?.heroPhotoUrl !== undefined
 
   // F2: prefer named strain (template > free-form > strainType label).
   const strainTemplate = plant.strainTemplateId
@@ -361,12 +370,12 @@ export default function PlantDetailPage() {
             <Eyebrow tone="accent" className="mb-2 block">Growth Stage</Eyebrow>
             <button
               onClick={handleAdvanceStage}
-              disabled={updatePlant.isPending}
+              disabled={isAdvancingStage}
               className="flex w-full items-center justify-between rounded-md border border-accent/40 bg-accent-soft px-4 py-3 text-left transition-colors hover:bg-accent-soft/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg disabled:opacity-60"
             >
               <div>
                 <p className="font-semibold text-accent">
-                  {updatePlant.isPending
+                  {isAdvancingStage
                     ? 'Advancing...'
                     : `Advance to ${GROWTH_STAGE_CONFIG[nextStage].label}`}
                 </p>
@@ -411,7 +420,7 @@ export default function PlantDetailPage() {
           plantId={plant.id}
           currentHeroUrl={heroUrl}
           onSetHero={handleSetHero}
-          isSettingHero={updatePlant.isPending}
+          isSettingHero={isSettingHero}
         />
 
         {/* F5 — Environmental data (Expert only) */}

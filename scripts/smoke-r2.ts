@@ -8,8 +8,8 @@
  *   4. La R2_PUBLIC_BASE_URL sirve el objeto públicamente (GET 200 + bytes iguales).
  *   5. Limpieza: borra el objeto de prueba.
  *
- * Uso:
- *   cd code && npx tsx scripts/smoke-r2.ts
+ * Uso (desde la raíz del repo):
+ *   npx tsx scripts/smoke-r2.ts
  *
  * No imprime secretos. Sale con código 1 si cualquier paso falla.
  */
