@@ -171,6 +171,9 @@ export default function PlantDetailPage() {
   const stageAccent = STAGE_ACCENT[stage] ?? STAGE_ACCENT.completed
   const careTag = careLogsData ? deriveCareTag(careLogsData.careLogs) : null
   const idShort = plant.id.slice(0, 4).toUpperCase()
+  // Hero image: prefer the F4-managed heroPhotoUrl (latest/selected photo),
+  // falling back to the legacy single photoUrl for plants created pre-F4.
+  const heroUrl = plant.heroPhotoUrl ?? plant.photoUrl
 
   // F2: prefer named strain (template > free-form > strainType label).
   const strainTemplate = plant.strainTemplateId
@@ -197,6 +200,18 @@ export default function PlantDetailPage() {
     }
   }
 
+  const handleSetHero = async (url: string) => {
+    try {
+      await updatePlant.mutateAsync({
+        plantId: plant.id,
+        data: { heroPhotoUrl: url },
+      })
+      toast.success('Cover photo updated')
+    } catch (err) {
+      toast.error(getApiErrorToastMessage(err, 'Failed to set cover photo'))
+    }
+  }
+
   const handleDelete = async () => {
     try {
       await deletePlant.mutateAsync(plant.id)
@@ -213,9 +228,9 @@ export default function PlantDetailPage() {
       <header
         className="relative isolate h-[320px] overflow-hidden bg-bg-2"
         style={
-          plant.photoUrl
+          heroUrl
             ? {
-                backgroundImage: `url(${plant.photoUrl})`,
+                backgroundImage: `url(${heroUrl})`,
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
               }
@@ -277,7 +292,7 @@ export default function PlantDetailPage() {
         </div>
 
         {/* Placeholder when no photo */}
-        {!plant.photoUrl && (
+        {!heroUrl && (
           <div className="absolute inset-0 flex items-center justify-center">
             <Leaf className="h-20 w-20 text-fg-4" aria-hidden="true" />
           </div>
@@ -391,8 +406,13 @@ export default function PlantDetailPage() {
           <UploadZone mode="immediate" plantId={plant.id} stage={stage} />
         </section>
 
-        {/* Photo Timeline (F4) */}
-        <PhotoTimeline plantId={plant.id} />
+        {/* Photo Timeline (F4) — photos selectable as cover via lightbox */}
+        <PhotoTimeline
+          plantId={plant.id}
+          currentHeroUrl={heroUrl}
+          onSetHero={handleSetHero}
+          isSettingHero={updatePlant.isPending}
+        />
 
         {/* F5 — Environmental data (Expert only) */}
         {stageMode === 'expert' && (

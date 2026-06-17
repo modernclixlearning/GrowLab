@@ -8,7 +8,7 @@
  */
 
 import { useState } from 'react'
-import { Sparkles, X, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Sparkles, X, ChevronLeft, ChevronRight, Star, Check } from 'lucide-react'
 import { usePlantPhotos } from '@/lib/hooks/usePlantPhotos'
 import { Eyebrow } from '@/components/shell'
 import type { PlantPhoto } from '@/types/plant-photos'
@@ -44,11 +44,19 @@ interface LightboxProps {
   current: number
   onClose: () => void
   onNav:   (idx: number) => void
+  /** URL of the plant's current hero/cover photo, if any. */
+  currentHeroUrl?: string | null
+  /** When provided, renders a "Set as cover" action in the lightbox. */
+  onSetHero?: (url: string) => void
+  /** True while a set-hero mutation is in flight. */
+  isSettingHero?: boolean
 }
 
-function Lightbox({ photos, current, onClose, onNav }: LightboxProps) {
+function Lightbox({ photos, current, onClose, onNav, currentHeroUrl, onSetHero, isSettingHero }: LightboxProps) {
   const photo = photos[current]
   if (!photo) return null
+
+  const isCurrentHero = !!photo.url && photo.url === currentHeroUrl
 
   return (
     <div
@@ -92,6 +100,28 @@ function Lightbox({ photos, current, onClose, onNav }: LightboxProps) {
           </div>
           <span className="text-xs text-fg-3">{current + 1} / {photos.length}</span>
         </div>
+
+        {/* Set-as-cover action */}
+        {onSetHero && (
+          <div className="mt-3 px-1">
+            {isCurrentHero ? (
+              <span className="inline-flex items-center gap-1.5 rounded-md border border-accent/40 bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent">
+                <Check className="h-3.5 w-3.5" />
+                Cover photo
+              </span>
+            ) : (
+              <button
+                type="button"
+                onClick={() => onSetHero(photo.url)}
+                disabled={isSettingHero}
+                className="inline-flex items-center gap-1.5 rounded-md border border-line bg-card px-3 py-1.5 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/40 hover:text-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg disabled:opacity-60"
+              >
+                <Star className="h-3.5 w-3.5" />
+                {isSettingHero ? 'Setting…' : 'Set as cover'}
+              </button>
+            )}
+          </div>
+        )}
 
         {/* Navigation */}
         {photos.length > 1 && (
@@ -153,9 +183,15 @@ function Thumbnail({ photo, onClick }: ThumbnailProps) {
 
 interface PhotoTimelineProps {
   plantId: string
+  /** URL of the plant's current hero/cover photo, if any. */
+  currentHeroUrl?: string | null
+  /** When provided, photos can be selected as the plant's cover photo. */
+  onSetHero?: (url: string) => void
+  /** True while a set-hero mutation is in flight. */
+  isSettingHero?: boolean
 }
 
-export function PhotoTimeline({ plantId }: PhotoTimelineProps) {
+export function PhotoTimeline({ plantId, currentHeroUrl, onSetHero, isSettingHero }: PhotoTimelineProps) {
   const { data, isLoading } = usePlantPhotos(plantId)
   const [lightboxPhotos, setLightboxPhotos] = useState<PlantPhoto[] | null>(null)
   const [lightboxIdx,    setLightboxIdx]    = useState(0)
@@ -223,6 +259,9 @@ export function PhotoTimeline({ plantId }: PhotoTimelineProps) {
           current={lightboxIdx}
           onClose={closeLightbox}
           onNav={setLightboxIdx}
+          currentHeroUrl={currentHeroUrl}
+          onSetHero={onSetHero}
+          isSettingHero={isSettingHero}
         />
       )}
     </>
