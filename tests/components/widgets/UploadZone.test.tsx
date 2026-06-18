@@ -3,11 +3,15 @@
  */
 
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 
 vi.mock('@/lib/hooks/usePlantPhotos', () => ({
   useUploadPhoto: () => ({ mutate: vi.fn(), isPending: false }),
   useGenerateAiImage: () => ({ mutate: vi.fn(), isPending: false }),
+}))
+
+vi.mock('@/lib/utils/image', () => ({
+  convertToWebP: (f: File) => Promise.resolve(f),
 }))
 
 // jsdom doesn't implement URL.createObjectURL/revokeObjectURL
@@ -38,12 +42,12 @@ describe('UploadZone', () => {
     expect(dropZone.className).toContain('border-accent')
   })
 
-  it('calls onFileSelected when a file is dropped', () => {
+  it('calls onFileSelected when a file is dropped', async () => {
     const onFileSelected = vi.fn()
     render(<UploadZone mode="defer" onFileSelected={onFileSelected} />)
     const dropZone = screen.getByRole('button', { name: /upload photo/i })
     const file = new File(['image data'], 'photo.jpg', { type: 'image/jpeg' })
     fireEvent.drop(dropZone, { dataTransfer: { files: [file] } })
-    expect(onFileSelected).toHaveBeenCalledWith(file)
+    await waitFor(() => expect(onFileSelected).toHaveBeenCalledWith(file))
   })
 })
