@@ -7,6 +7,7 @@
 
 import { z } from 'zod'
 import { GROWTH_STAGES } from '@/server/db/schema'
+import { STYLE_KEYS } from '@/server/ai/stage-presets'
 
 export const generateImageSchema = z
   .object({
@@ -16,6 +17,11 @@ export const generateImageSchema = z
     stagePreset: z.boolean().optional(),
     /** Custom freeform prompt (max 500 chars). */
     prompt:      z.string().min(1).max(500).optional(),
+    /**
+     * Visual style template — orthogonal to the preset/prompt XOR (REG-4).
+     * Optional; omitted ⇒ 'photorealistic' is applied at compose time (REG-1).
+     */
+    style:       z.enum(STYLE_KEYS).optional(),
   })
   .superRefine((v, ctx) => {
     const hasPreset = v.stagePreset === true

@@ -145,7 +145,7 @@ export async function savePhoto(
   input: CreatePhotoInput,
   userId: string,
   sourceType: 'upload' | 'ai' = 'upload',
-  aiMeta?: { prompt?: string; provider?: string },
+  aiMeta?: { prompt?: string; provider?: string; style?: string },
 ): Promise<UploadResult<SavePhotoResult>> {
   const ownership = await verifyPlantOwnership(input.plantId, userId)
   if (!ownership.ok) {
@@ -165,6 +165,7 @@ export async function savePhoto(
       sourceType,
       aiPrompt:   aiMeta?.prompt,
       aiProvider: aiMeta?.provider,
+      aiStyle:    aiMeta?.style,
       width:      input.width,
       height:     input.height,
     })
@@ -182,10 +183,17 @@ export async function savePhoto(
 
 // ─── listPhotos ───────────────────────────────────────────────────────────────
 
+export interface AiQuotaInfo {
+  used:      number
+  limit:     number
+  remaining: number
+}
+
 export async function listPhotos(
   plantId: string,
   userId: string,
-): Promise<UploadResult<{ photos: typeof plantPhotos.$inferSelect[] }>> {
+  stageMode: string,
+): Promise<UploadResult<{ photos: typeof plantPhotos.$inferSelect[]; aiQuota: AiQuotaInfo }>> {
   const ownership = await verifyPlantOwnership(plantId, userId)
   if (!ownership.ok) {
     return {
@@ -201,7 +209,13 @@ export async function listPhotos(
     .where(eq(plantPhotos.plantId, plantId))
     .orderBy(plantPhotos.createdAt)
 
-  return { success: true, data: { photos } }
+  // Server-authoritative AI quota (REG-2). Derived from the photos we already
+  // fetched (no extra query) so the client never duplicates the limit map.
+  const limit = aiQuota(stageMode)
+  const used  = photos.filter((p) => p.sourceType === 'ai').length
+  const remaining = Math.max(0, limit - used)
+
+  return { success: true, data: { photos, aiQuota: { used, limit, remaining } } }
 }
 
 // ─── countAiPhotos (used by AI service for quota) ────────────────────────────

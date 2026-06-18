@@ -16,7 +16,7 @@ import { db } from '@/server/db'
 import { env } from '@/server/lib/env'
 import { plants } from '@/server/db/schema'
 import { eq } from 'drizzle-orm'
-import { STAGE_PRESETS } from '@/server/ai/stage-presets'
+import { buildPrompt } from '@/server/ai/stage-presets'
 import { countAiPhotos, aiQuota, savePhoto } from '@/server/api/uploads/service'
 import type { GenerateImageInput } from './schemas'
 
@@ -141,10 +141,15 @@ export async function generateAiImage(
     }
   }
 
-  // Resolve prompt
-  const prompt = input.stagePreset
-    ? (STAGE_PRESETS[input.stage] ?? `Cannabis plant in ${input.stage} stage`)
-    : (input.prompt ?? '')
+  // Resolve prompt — single pure composition point (stage/free + style modifier).
+  // The style modifier is concatenated here, after schema validation, so it
+  // never consumes the user's 500-char budget (REG-5).
+  const prompt = buildPrompt({
+    stage:       input.stage,
+    stagePreset: input.stagePreset,
+    prompt:      input.prompt,
+    style:       input.style,
+  })
 
   // Generate
   let aiImageUrl: string
@@ -181,7 +186,7 @@ export async function generateAiImage(
     { plantId: input.plantId, stage: input.stage, url: publicUrl },
     userId,
     'ai',
-    { prompt, provider: env.AI_PROVIDER },
+    { prompt, provider: env.AI_PROVIDER, style: input.style },
   )
 
   if (!saveResult.success) {
