@@ -16,6 +16,7 @@ import {
   generateAiImage,
 } from '@/lib/api/plant-photos'
 import { getApiErrorToastMessage } from '@/lib/api/errors'
+import { convertToWebP } from '@/lib/utils/image'
 import type { GrowthStage } from '@/types/plants'
 
 // ─── Query key factory ────────────────────────────────────────────────────────
@@ -53,16 +54,18 @@ export function useUploadPhoto() {
     mutationFn: async ({ plantId, stage, file }: UploadPhotoVars) => {
       if (!accessToken) throw new Error('Not authenticated')
 
+      const webpFile = await convertToWebP(file)
+
       // Step 1 — request presigned URL
       const { uploadUrl, publicUrl } = await getPresignedUrl(accessToken, {
         plantId,
         stage,
-        contentType: file.type,
-        sizeBytes:   file.size,
+        contentType: webpFile.type,
+        sizeBytes:   webpFile.size,
       })
 
       // Step 2 — PUT file directly to R2
-      await putFileToR2(uploadUrl, file)
+      await putFileToR2(uploadUrl, webpFile)
 
       // Step 3 — persist record
       const { photo } = await savePhoto(accessToken, { plantId, stage, url: publicUrl })

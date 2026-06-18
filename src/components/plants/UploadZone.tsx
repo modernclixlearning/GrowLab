@@ -15,6 +15,7 @@
 import { useRef, useState, useCallback, useEffect } from 'react'
 import { Upload, Sparkles, ImageIcon, X } from 'lucide-react'
 import { useUploadPhoto, useGenerateAiImage } from '@/lib/hooks/usePlantPhotos'
+import { convertToWebP } from '@/lib/utils/image'
 import type { GrowthStage } from '@/types/plants'
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -65,7 +66,7 @@ export function UploadZone(props: UploadZoneProps) {
   // ── File validation ─────────────────────────────────────────────────────────
 
   const handleFile = useCallback(
-    (file: File) => {
+    async (file: File) => {
       setError(null)
       if (!file.type.startsWith('image/')) {
         setError('Only image files are accepted.')
@@ -82,7 +83,12 @@ export function UploadZone(props: UploadZoneProps) {
       setPreview(objectUrl)
 
       if (props.mode === 'defer') {
-        props.onFileSelected(file)
+        const webpFile = await convertToWebP(file)
+        const webpUrl = URL.createObjectURL(webpFile)
+        if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current)
+        objectUrlRef.current = webpUrl
+        setPreview(webpUrl)
+        props.onFileSelected(webpFile)
       } else {
         uploadPhoto.mutate(
           { plantId: props.plantId, stage: props.stage, file },
