@@ -14,9 +14,14 @@
 
 import { useRef, useState, useCallback, useEffect } from 'react'
 import { Upload, Sparkles, ImageIcon, X } from 'lucide-react'
-import { useUploadPhoto, useGenerateAiImage } from '@/lib/hooks/usePlantPhotos'
+import {
+  useUploadPhoto,
+  useGenerateAiImage,
+  usePlantPhotos,
+} from '@/lib/hooks/usePlantPhotos'
 import { convertToWebP } from '@/lib/utils/image'
 import type { GrowthStage } from '@/types/plants'
+import type { StyleKey } from '@/types/plant-photos'
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -39,6 +44,14 @@ type UploadZoneProps = DeferProps | ImmediateProps
 const ACCEPTED = 'image/jpeg,image/png,image/webp,image/gif'
 const MAX_MB    = 10
 
+/** Visual style templates for AI generation (modifier-only — no extra quota). */
+const STYLE_OPTIONS: { id: StyleKey; label: string }[] = [
+  { id: 'photorealistic', label: 'Photorealistic' },
+  { id: 'illustration',   label: 'Illustration' },
+  { id: 'psychedelic',    label: 'Psychedelic' },
+  { id: 'minimal',        label: 'Minimal' },
+]
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function UploadZone(props: UploadZoneProps) {
@@ -50,6 +63,7 @@ export function UploadZone(props: UploadZoneProps) {
   )
   const [aiMode,   setAiMode]   = useState(false)
   const [aiPrompt, setAiPrompt] = useState('')
+  const [aiStyle,  setAiStyle]  = useState<StyleKey>('photorealistic')
   const [error,    setError]    = useState<string | null>(null)
 
   // Revoke any outstanding object URL on unmount to avoid memory leaks.
@@ -60,6 +74,12 @@ export function UploadZone(props: UploadZoneProps) {
   // Mutation hooks (used only in immediate mode)
   const uploadPhoto    = useUploadPhoto()
   const generateAiImg  = useGenerateAiImage()
+
+  // Server-authoritative AI quota (REG-2). In defer mode there's no plantId,
+  // so the query stays disabled and aiQuota is undefined.
+  const photosQuery = usePlantPhotos(props.mode === 'immediate' ? props.plantId : '')
+  const aiQuota     = photosQuery.data?.aiQuota
+  const quotaExhausted = aiQuota?.remaining === 0
 
   const isLoading = uploadPhoto.isPending || generateAiImg.isPending
 
@@ -129,8 +149,8 @@ export function UploadZone(props: UploadZoneProps) {
     setError(null)
     const vars =
       aiPrompt.trim()
-        ? { plantId: props.plantId, stage: props.stage, prompt: aiPrompt.trim() }
-        : { plantId: props.plantId, stage: props.stage, stagePreset: true as const }
+        ? { plantId: props.plantId, stage: props.stage, prompt: aiPrompt.trim(), style: aiStyle }
+        : { plantId: props.plantId, stage: props.stage, stagePreset: true as const, style: aiStyle }
 
     generateAiImg.mutate(vars, {
       onSuccess: (result) => {
@@ -255,15 +275,57 @@ export function UploadZone(props: UploadZoneProps) {
                 maxLength={500}
                 className="w-full rounded-md border border-line bg-bg-1 px-4 h-11 text-[14px] text-fg placeholder:text-fg-4 outline-none transition-colors focus:border-accent focus-visible:ring-2 focus-visible:ring-accent/40"
               />
-              <button
-                type="button"
-                onClick={handleAiGenerate}
-                disabled={isLoading}
-                className="inline-flex items-center gap-2 rounded-full bg-accent px-5 h-10 text-sm font-bold text-bg shadow-accent-glow transition-transform hover:scale-[1.01] focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg disabled:opacity-60"
+
+              {/* Style template selector — applies to both preset and free prompt */}
+              <div
+                className="flex flex-wrap gap-2"
+                role="radiogroup"
+                aria-label="AI image style"
               >
-                <Sparkles className="h-4 w-4" />
-                {isLoading ? 'Generating…' : 'Generate'}
-              </button>
+                {STYLE_OPTIONS.map(({ id, label }) => {
+                  const active = aiStyle === id
+                  return (
+                    <button
+                      key={id}
+                      type="button"
+                      role="radio"
+                      aria-checked={active}
+                      onClick={() => setAiStyle(id)}
+                      className={[
+                        'inline-flex flex-shrink-0 items-center rounded-full border px-3 py-1.5',
+                        'font-mono text-[11px] font-medium uppercase tracking-eyebrow transition-colors',
+                        'focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg',
+                        active
+                          ? 'border-accent bg-accent-soft text-accent'
+                          : 'border-line bg-card text-fg-2 hover:bg-card-2 hover:text-fg',
+                      ].join(' ')}
+                    >
+                      {label}
+                    </button>
+                  )
+                })}
+              </div>
+
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={handleAiGenerate}
+                  disabled={isLoading || quotaExhausted}
+                  className="inline-flex items-center gap-2 rounded-full bg-accent px-5 h-10 text-sm font-bold text-bg shadow-accent-glow transition-transform hover:scale-[1.01] focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg disabled:opacity-60"
+                >
+                  <Sparkles className="h-4 w-4" />
+                  {isLoading ? 'Generating…' : 'Generate'}
+                </button>
+
+                {/* Remaining AI quota indicator (server-authoritative, REG-2) */}
+                {aiQuota && (
+                  <p className="text-xs text-fg-3">
+                    {quotaExhausted
+                      ? 'No AI images left'
+                      : `${aiQuota.remaining} of ${aiQuota.limit} AI images left`}
+                  </p>
+                )}
+              </div>
             </div>
           )}
         </>
