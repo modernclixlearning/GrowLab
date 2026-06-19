@@ -15,7 +15,7 @@ export interface PlantPhoto {
   sourceType: 'upload' | 'ai'
   aiPrompt:   string | null
   aiProvider: string | null
-  aiStyle:    string | null
+  aiStyle:    StyleKey | null
   width:      number | null
   height:     number | null
   createdAt:  string

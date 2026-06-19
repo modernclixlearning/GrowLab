@@ -141,6 +141,11 @@ export async function generateAiImage(
     }
   }
 
+  // Resolve the effective style ONCE (REG-1 default) so the persisted
+  // ai_style matches the modifier actually applied — never null when a
+  // concrete style was used.
+  const style = input.style ?? 'photorealistic'
+
   // Resolve prompt — single pure composition point (stage/free + style modifier).
   // The style modifier is concatenated here, after schema validation, so it
   // never consumes the user's 500-char budget (REG-5).
@@ -148,7 +153,7 @@ export async function generateAiImage(
     stage:       input.stage,
     stagePreset: input.stagePreset,
     prompt:      input.prompt,
-    style:       input.style,
+    style,
   })
 
   // Generate
@@ -186,7 +191,7 @@ export async function generateAiImage(
     { plantId: input.plantId, stage: input.stage, url: publicUrl },
     userId,
     'ai',
-    { prompt, provider: env.AI_PROVIDER, style: input.style },
+    { prompt, provider: env.AI_PROVIDER, style },
   )
 
   if (!saveResult.success) {

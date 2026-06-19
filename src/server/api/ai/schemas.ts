@@ -15,8 +15,9 @@ export const generateImageSchema = z
     stage:       z.enum(GROWTH_STAGES),
     /** Use the built-in stage preset prompt. */
     stagePreset: z.boolean().optional(),
-    /** Custom freeform prompt (max 500 chars). */
-    prompt:      z.string().min(1).max(500).optional(),
+    /** Custom freeform prompt (max 500 chars). Trimmed so whitespace-only
+     *  input fails .min(1) instead of masquerading as free-prompt mode. */
+    prompt:      z.string().trim().min(1).max(500).optional(),
     /**
      * Visual style template — orthogonal to the preset/prompt XOR (REG-4).
      * Optional; omitted ⇒ 'photorealistic' is applied at compose time (REG-1).
