@@ -52,10 +52,14 @@ async function verifyPlantOwnership(plantId: string, userId: string) {
 
 // ─── OpenAI adapter ───────────────────────────────────────────────────────────
 
-async function generateWithOpenAi(prompt: string): Promise<{ url: string }> {
+async function generateWithOpenAi(prompt: string): Promise<{ url?: string; b64?: string }> {
   const apiKey = process.env.OPENAI_API_KEY
   if (!apiKey) throw new Error('AI_CONFIG_MISSING')
 
+  // NOTE: `response_format` is intentionally NOT sent. The OpenAI images
+  // endpoint rejects it (`400 Unknown parameter: 'response_format'`) and now
+  // returns either a `url` or `b64_json` depending on the model/account
+  // default. We accept whichever comes back (see reuploadToR2).
   const res = await fetch('https://api.openai.com/v1/images/generations', {
     method: 'POST',
     headers: {
@@ -63,11 +67,10 @@ async function generateWithOpenAi(prompt: string): Promise<{ url: string }> {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model:           'dall-e-3',
+      model:  'dall-e-3',
       prompt,
-      n:               1,
-      size:            '1024x1024',
-      response_format: 'url',
+      n:      1,
+      size:   '1024x1024',
     }),
   })
 
@@ -76,16 +79,17 @@ async function generateWithOpenAi(prompt: string): Promise<{ url: string }> {
     throw new Error(`OpenAI error ${res.status}: ${body}`)
   }
 
-  const json = (await res.json()) as { data: { url: string }[] }
-  const url = json.data[0]?.url
-  if (!url) throw new Error('OpenAI returned no image URL')
-  return { url }
+  const json = (await res.json()) as { data: { url?: string; b64_json?: string }[] }
+  const item = json.data[0]
+  if (item?.url) return { url: item.url }
+  if (item?.b64_json) return { b64: item.b64_json }
+  throw new Error('OpenAI returned no image data')
 }
 
 // ─── Download remote image and upload to R2 ───────────────────────────────────
 
 async function reuploadToR2(
-  remoteUrl: string,
+  source: { url?: string; b64?: string },
   userId: string,
   plantId: string,
   stage: string,
@@ -94,10 +98,21 @@ async function reuploadToR2(
     throw new Error('R2_CONFIG_MISSING')
   }
 
-  const imgRes = await fetch(remoteUrl)
-  if (!imgRes.ok) throw new Error('Failed to download AI image')
-  const buffer = Buffer.from(await imgRes.arrayBuffer())
-  const contentType = imgRes.headers.get('content-type') ?? 'image/png'
+  // Resolve the image bytes from whichever shape OpenAI returned.
+  let buffer: Buffer
+  let contentType: string
+  if (source.url) {
+    const imgRes = await fetch(source.url)
+    if (!imgRes.ok) throw new Error('Failed to download AI image')
+    buffer = Buffer.from(await imgRes.arrayBuffer())
+    contentType = imgRes.headers.get('content-type') ?? 'image/png'
+  } else if (source.b64) {
+    buffer = Buffer.from(source.b64, 'base64')
+    contentType = 'image/png' // images endpoint returns PNG
+  } else {
+    throw new Error('No image data to store')
+  }
+
   const ext = contentType.split('/')[1]?.replace('jpeg', 'jpg') ?? 'png'
 
   const key = `users/${userId}/plants/${plantId}/${stage}/ai-${nanoid()}.${ext}`
@@ -157,12 +172,11 @@ export async function generateAiImage(
   })
 
   // Generate
-  let aiImageUrl: string
+  let imageSource: { url?: string; b64?: string }
   try {
     const provider = env.AI_PROVIDER
     if (provider === 'openai') {
-      const result = await generateWithOpenAi(prompt)
-      aiImageUrl = result.url
+      imageSource = await generateWithOpenAi(prompt)
     } else {
       return { success: false, error: 'AI_CONFIG_MISSING', message: `Unsupported AI provider: ${provider}` }
     }
@@ -174,10 +188,10 @@ export async function generateAiImage(
     return { success: false, error: 'AI_PROVIDER_ERROR', message: `AI generation failed: ${message}` }
   }
 
-  // Re-upload to R2 (OpenAI URLs expire after 1 hour)
+  // Re-upload to R2 (OpenAI URLs expire after 1 hour; b64 is inlined directly)
   let publicUrl: string
   try {
-    publicUrl = await reuploadToR2(aiImageUrl, userId, input.plantId, input.stage)
+    publicUrl = await reuploadToR2(imageSource, userId, input.plantId, input.stage)
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
     if (message === 'R2_CONFIG_MISSING') {
