@@ -1,9 +1,9 @@
 /**
  * GrowLab AI Image Service (F4)
  *
- * Generates plant images via OpenAI DALL-E 3 (default) and stores the
- * result in R2.  The AI provider is selected by the AI_PROVIDER env var
- * (only 'openai' is implemented; stub surface for future providers).
+ * Generates plant images via OpenAI gpt-image-1 and stores the result in
+ * R2.  The AI provider is selected by the AI_PROVIDER env var (only 'openai'
+ * is implemented; stub surface for future providers).
  *
  * Quotas:
  *   Basic  — 1 AI-generated image per plant lifetime
@@ -52,10 +52,21 @@ async function verifyPlantOwnership(plantId: string, userId: string) {
 
 // ─── OpenAI adapter ───────────────────────────────────────────────────────────
 
-async function generateWithOpenAi(prompt: string): Promise<{ url: string }> {
+/** Exactly one shape — discriminated so TS enforces the invariant. */
+type AiImageSource =
+  | { kind: 'url'; url: string }
+  | { kind: 'b64'; b64: string }
+
+async function generateWithOpenAi(prompt: string): Promise<AiImageSource> {
   const apiKey = process.env.OPENAI_API_KEY
   if (!apiKey) throw new Error('AI_CONFIG_MISSING')
 
+  // Model: gpt-image-1 (dall-e-3 was deprecated — "model does not exist").
+  // gpt-image-1 does NOT accept `response_format` (that was the original 400)
+  // and always returns `b64_json`. `quality: 'medium'` keeps the per-image
+  // cost (~$0.04) close to the old dall-e-3 'standard' instead of the
+  // pricier 'auto'/high default. We still accept a `url` too (see reuploadToR2)
+  // so the adapter is resilient to either response shape.
   const res = await fetch('https://api.openai.com/v1/images/generations', {
     method: 'POST',
     headers: {
@@ -63,11 +74,11 @@ async function generateWithOpenAi(prompt: string): Promise<{ url: string }> {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model:           'dall-e-3',
+      model:   'gpt-image-1',
       prompt,
-      n:               1,
-      size:            '1024x1024',
-      response_format: 'url',
+      n:       1,
+      size:    '1024x1024',
+      quality: 'medium',
     }),
   })
 
@@ -76,16 +87,17 @@ async function generateWithOpenAi(prompt: string): Promise<{ url: string }> {
     throw new Error(`OpenAI error ${res.status}: ${body}`)
   }
 
-  const json = (await res.json()) as { data: { url: string }[] }
-  const url = json.data[0]?.url
-  if (!url) throw new Error('OpenAI returned no image URL')
-  return { url }
+  const json = (await res.json()) as { data: { url?: string; b64_json?: string }[] }
+  const item = json.data[0]
+  if (item?.url) return { kind: 'url', url: item.url }
+  if (item?.b64_json) return { kind: 'b64', b64: item.b64_json }
+  throw new Error('OpenAI returned no image data')
 }
 
 // ─── Download remote image and upload to R2 ───────────────────────────────────
 
 async function reuploadToR2(
-  remoteUrl: string,
+  source: AiImageSource,
   userId: string,
   plantId: string,
   stage: string,
@@ -94,10 +106,21 @@ async function reuploadToR2(
     throw new Error('R2_CONFIG_MISSING')
   }
 
-  const imgRes = await fetch(remoteUrl)
-  if (!imgRes.ok) throw new Error('Failed to download AI image')
-  const buffer = Buffer.from(await imgRes.arrayBuffer())
-  const contentType = imgRes.headers.get('content-type') ?? 'image/png'
+  // Resolve the image bytes from whichever shape OpenAI returned.
+  let buffer: Buffer
+  let contentType: string
+  if (source.kind === 'url') {
+    const imgRes = await fetch(source.url)
+    if (!imgRes.ok) throw new Error('Failed to download AI image')
+    buffer = Buffer.from(await imgRes.arrayBuffer())
+    // Strip any `;charset=…` params so the ext + stored Content-Type stay canonical.
+    const rawType = imgRes.headers.get('content-type') ?? 'image/png'
+    contentType = rawType.split(';')[0]?.trim() || 'image/png'
+  } else {
+    buffer = Buffer.from(source.b64, 'base64')
+    contentType = 'image/png' // images endpoint returns PNG
+  }
+
   const ext = contentType.split('/')[1]?.replace('jpeg', 'jpg') ?? 'png'
 
   const key = `users/${userId}/plants/${plantId}/${stage}/ai-${nanoid()}.${ext}`
@@ -157,12 +180,11 @@ export async function generateAiImage(
   })
 
   // Generate
-  let aiImageUrl: string
+  let imageSource: AiImageSource
   try {
     const provider = env.AI_PROVIDER
     if (provider === 'openai') {
-      const result = await generateWithOpenAi(prompt)
-      aiImageUrl = result.url
+      imageSource = await generateWithOpenAi(prompt)
     } else {
       return { success: false, error: 'AI_CONFIG_MISSING', message: `Unsupported AI provider: ${provider}` }
     }
@@ -174,10 +196,10 @@ export async function generateAiImage(
     return { success: false, error: 'AI_PROVIDER_ERROR', message: `AI generation failed: ${message}` }
   }
 
-  // Re-upload to R2 (OpenAI URLs expire after 1 hour)
+  // Re-upload to R2 (OpenAI URLs expire after 1 hour; b64 is inlined directly)
   let publicUrl: string
   try {
-    publicUrl = await reuploadToR2(aiImageUrl, userId, input.plantId, input.stage)
+    publicUrl = await reuploadToR2(imageSource, userId, input.plantId, input.stage)
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
     if (message === 'R2_CONFIG_MISSING') {
