@@ -1,9 +1,9 @@
 /**
  * GrowLab AI Image Service (F4)
  *
- * Generates plant images via OpenAI DALL-E 3 (default) and stores the
- * result in R2.  The AI provider is selected by the AI_PROVIDER env var
- * (only 'openai' is implemented; stub surface for future providers).
+ * Generates plant images via OpenAI gpt-image-1 and stores the result in
+ * R2.  The AI provider is selected by the AI_PROVIDER env var (only 'openai'
+ * is implemented; stub surface for future providers).
  *
  * Quotas:
  *   Basic  — 1 AI-generated image per plant lifetime
@@ -56,10 +56,12 @@ async function generateWithOpenAi(prompt: string): Promise<{ url?: string; b64?:
   const apiKey = process.env.OPENAI_API_KEY
   if (!apiKey) throw new Error('AI_CONFIG_MISSING')
 
-  // NOTE: `response_format` is intentionally NOT sent. The OpenAI images
-  // endpoint rejects it (`400 Unknown parameter: 'response_format'`) and now
-  // returns either a `url` or `b64_json` depending on the model/account
-  // default. We accept whichever comes back (see reuploadToR2).
+  // Model: gpt-image-1 (dall-e-3 was deprecated — "model does not exist").
+  // gpt-image-1 does NOT accept `response_format` (that was the original 400)
+  // and always returns `b64_json`. `quality: 'medium'` keeps the per-image
+  // cost (~$0.04) close to the old dall-e-3 'standard' instead of the
+  // pricier 'auto'/high default. We still accept a `url` too (see reuploadToR2)
+  // so the adapter is resilient to either response shape.
   const res = await fetch('https://api.openai.com/v1/images/generations', {
     method: 'POST',
     headers: {
@@ -67,10 +69,11 @@ async function generateWithOpenAi(prompt: string): Promise<{ url?: string; b64?:
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model:  'dall-e-3',
+      model:   'gpt-image-1',
       prompt,
-      n:      1,
-      size:   '1024x1024',
+      n:       1,
+      size:    '1024x1024',
+      quality: 'medium',
     }),
   })
 
