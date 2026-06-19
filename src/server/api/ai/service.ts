@@ -52,7 +52,12 @@ async function verifyPlantOwnership(plantId: string, userId: string) {
 
 // ─── OpenAI adapter ───────────────────────────────────────────────────────────
 
-async function generateWithOpenAi(prompt: string): Promise<{ url?: string; b64?: string }> {
+/** Exactly one shape — discriminated so TS enforces the invariant. */
+type AiImageSource =
+  | { kind: 'url'; url: string }
+  | { kind: 'b64'; b64: string }
+
+async function generateWithOpenAi(prompt: string): Promise<AiImageSource> {
   const apiKey = process.env.OPENAI_API_KEY
   if (!apiKey) throw new Error('AI_CONFIG_MISSING')
 
@@ -84,15 +89,15 @@ async function generateWithOpenAi(prompt: string): Promise<{ url?: string; b64?:
 
   const json = (await res.json()) as { data: { url?: string; b64_json?: string }[] }
   const item = json.data[0]
-  if (item?.url) return { url: item.url }
-  if (item?.b64_json) return { b64: item.b64_json }
+  if (item?.url) return { kind: 'url', url: item.url }
+  if (item?.b64_json) return { kind: 'b64', b64: item.b64_json }
   throw new Error('OpenAI returned no image data')
 }
 
 // ─── Download remote image and upload to R2 ───────────────────────────────────
 
 async function reuploadToR2(
-  source: { url?: string; b64?: string },
+  source: AiImageSource,
   userId: string,
   plantId: string,
   stage: string,
@@ -104,16 +109,16 @@ async function reuploadToR2(
   // Resolve the image bytes from whichever shape OpenAI returned.
   let buffer: Buffer
   let contentType: string
-  if (source.url) {
+  if (source.kind === 'url') {
     const imgRes = await fetch(source.url)
     if (!imgRes.ok) throw new Error('Failed to download AI image')
     buffer = Buffer.from(await imgRes.arrayBuffer())
-    contentType = imgRes.headers.get('content-type') ?? 'image/png'
-  } else if (source.b64) {
+    // Strip any `;charset=…` params so the ext + stored Content-Type stay canonical.
+    const rawType = imgRes.headers.get('content-type') ?? 'image/png'
+    contentType = rawType.split(';')[0]?.trim() || 'image/png'
+  } else {
     buffer = Buffer.from(source.b64, 'base64')
     contentType = 'image/png' // images endpoint returns PNG
-  } else {
-    throw new Error('No image data to store')
   }
 
   const ext = contentType.split('/')[1]?.replace('jpeg', 'jpg') ?? 'png'
@@ -175,7 +180,7 @@ export async function generateAiImage(
   })
 
   // Generate
-  let imageSource: { url?: string; b64?: string }
+  let imageSource: AiImageSource
   try {
     const provider = env.AI_PROVIDER
     if (provider === 'openai') {
