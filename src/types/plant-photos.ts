@@ -15,6 +15,7 @@ export interface PlantPhoto {
   sourceType: 'upload' | 'ai'
   aiPrompt:   string | null
   aiProvider: string | null
+  aiStyle:    StyleKey | null
   width:      number | null
   height:     number | null
   createdAt:  string
@@ -45,14 +46,26 @@ export interface SavePhotoInput {
   height?: number
 }
 
+/** Visual style template keys for AI generation (mirror of server STYLE_KEYS). */
+export type StyleKey = 'photorealistic' | 'illustration' | 'psychedelic' | 'minimal'
+
 /** Payload for POST /api/ai/generate-image */
 export interface GenerateImageInput {
   plantId:     string
   stage:       GrowthStage
   stagePreset?: boolean
   prompt?:     string
+  style?:      StyleKey
+}
+
+/** Server-authoritative AI quota snapshot for a plant (REG-2). */
+export interface AiQuota {
+  used:      number
+  limit:     number
+  remaining: number
 }
 
 export interface PhotosListResponse {
-  photos: PlantPhoto[]
+  photos:  PlantPhoto[]
+  aiQuota: AiQuota
 }

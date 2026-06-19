@@ -39,6 +39,9 @@ export const plantPhotos = pgTable(
     /** AI_PROVIDER env snapshot at generation time (e.g. 'openai'). */
     aiProvider: text('ai_provider'),
 
+    /** Style template key chosen at generation time (e.g. 'photorealistic'). Null for uploads. */
+    aiStyle: text('ai_style'),
+
     width: integer('width'),
     height: integer('height'),
 

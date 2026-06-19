@@ -16,6 +16,8 @@ vi.mock('@/lib/hooks/usePlants', () => ({
 vi.mock('@/lib/hooks/usePlantPhotos', () => ({
   useUploadPhoto: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useGenerateAiImage: () => ({ mutate: vi.fn(), isPending: false }),
+  // UploadZone now reads AI quota via usePlantPhotos (disabled in defer mode).
+  usePlantPhotos: () => ({ data: undefined, isLoading: false }),
 }))
 
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }))

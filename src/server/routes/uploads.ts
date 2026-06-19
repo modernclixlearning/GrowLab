@@ -114,7 +114,15 @@ uploadsRoutes.get('/photos/:plantId', async (c) => {
   if (!auth.authenticated) return auth.response as Response
 
   const { plantId } = c.req.param()
-  const result = await listPhotos(plantId, auth.user.userId)
+
+  const [userRow] = await db
+    .select({ stageMode: users.stageMode })
+    .from(users)
+    .where(eq(users.id, auth.user.userId))
+    .limit(1)
+  const stageMode = userRow?.stageMode ?? 'expert'
+
+  const result = await listPhotos(plantId, auth.user.userId, stageMode)
 
   if (!result.success) {
     const statusMap: Record<string, 400 | 403 | 404> = {

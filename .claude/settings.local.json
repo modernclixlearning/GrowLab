@@ -12,9 +12,13 @@
       "Bash(git push *)",
       "Bash(pnpm dlx *)",
       "Bash(pnpm db:push)",
+      "Bash(pnpm db:generate)",
+      "Bash(pnpm db:migrate)",
       "Bash(node -e \"console.log\\('a'.repeat\\(32\\)\\)\")",
       "Bash(INTERNAL_CRON_SECRET=$\\(node -e \"console.log\\('a'.repeat\\(32\\)\\)\"\\) pnpm test:run)",
-      "Bash(echo \"exit $?\")"
+      "Bash(echo \"exit $?\")",
+      "Bash(pnpm typecheck)",
+      "Bash(pnpm lint)"
     ]
   }
 }

@@ -18,6 +18,7 @@ import {
 import { getApiErrorToastMessage } from '@/lib/api/errors'
 import { convertToWebP } from '@/lib/utils/image'
 import type { GrowthStage } from '@/types/plants'
+import type { StyleKey } from '@/types/plant-photos'
 
 // ─── Query key factory ────────────────────────────────────────────────────────
 
@@ -90,6 +91,7 @@ interface GenerateAiVars {
   stage:       GrowthStage
   stagePreset?: boolean
   prompt?:     string
+  style?:      StyleKey
 }
 
 export function useGenerateAiImage() {
